@@ -6,7 +6,7 @@ services:
       python -m pip install --upgrade pip
       pip install -r requirements.txt
       python manage.py collectstatic --no-input
-    startCommand: gunicorn social_media_api.wsgi:application --log-level debug --timeout 120 --chdir /opt/render/project/src
+    startCommand: cd /opt/render/project/src && python -m gunicorn social_media_api.wsgi:application --log-level debug
     envVars:
       - key: DATABASE_URL
         fromDatabase:

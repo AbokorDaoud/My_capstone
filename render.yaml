@@ -12,7 +12,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: PYTHON_VERSION
-        value: 3.13.1
+        value: 3.10.13
       - key: WEB_CONCURRENCY
         value: 4
 

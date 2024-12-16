@@ -3,7 +3,7 @@ services:
     name: social-media-api
     env: python
     buildCommand: "./build.sh"
-    startCommand: "gunicorn social_media_api.wsgi:application"
+    startCommand: "cd social_media_api && gunicorn wsgi:application"
     envVars:
       - key: DATABASE_URL
         fromDatabase:

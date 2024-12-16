@@ -11,15 +11,14 @@ import os
 import sys
 from pathlib import Path
 
-# Add the project root directory to Python path
-current_path = Path(__file__).resolve().parent.parent
-if str(current_path) not in sys.path:
-    sys.path.append(str(current_path))
-    print(f"Added {current_path} to Python path")
+# Build paths inside the project
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.append(str(BASE_DIR))
 
+# Print debugging information
 print("Current working directory:", os.getcwd())
 print("Python path:", sys.path)
-print("Project directory contents:", os.listdir(current_path))
+print("Project directory contents:", os.listdir(BASE_DIR))
 
 from django.core.wsgi import get_wsgi_application
 
@@ -31,4 +30,5 @@ try:
 except Exception as e:
     print(f"Error loading application: {e}")
     print("Python path at error:", sys.path)
+    print("Current directory contents:", os.listdir(os.getcwd()))
     raise

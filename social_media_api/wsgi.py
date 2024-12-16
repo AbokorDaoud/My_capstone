@@ -9,12 +9,19 @@ https://docs.djangoproject.com/en/5.0/howto/deployment/wsgi/
 
 import os
 import sys
-from django.core.wsgi import get_wsgi_application
+from pathlib import Path
 
-# Print debugging information
+# Add the project root directory to Python path
+current_path = Path(__file__).resolve().parent.parent
+if str(current_path) not in sys.path:
+    sys.path.append(str(current_path))
+    print(f"Added {current_path} to Python path")
+
 print("Current working directory:", os.getcwd())
 print("Python path:", sys.path)
-print("Environment variables:", {k: v for k, v in os.environ.items() if k.startswith(('DJANGO', 'PYTHON'))})
+print("Project directory contents:", os.listdir(current_path))
+
+from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'social_media_api.settings')
 

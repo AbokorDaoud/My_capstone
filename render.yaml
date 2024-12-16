@@ -2,8 +2,13 @@ services:
   - type: web
     name: social-media-api
     env: python
-    buildCommand: "./build.sh"
-    startCommand: "gunicorn --chdir social_media_api wsgi:application"
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --no-input
+      python manage.py migrate
+    startCommand: |
+      pwd && ls -la && 
+      PYTHONPATH=/opt/render/project/src gunicorn social_media_api.wsgi:application --log-level debug
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -15,10 +20,10 @@ services:
         value: 3.10.13
       - key: WEB_CONCURRENCY
         value: 4
-      - key: PYTHONPATH
-        value: .
       - key: DJANGO_SETTINGS_MODULE
         value: social_media_api.settings
+      - key: DEBUG
+        value: "True"
 
 databases:
   - name: social_media_db

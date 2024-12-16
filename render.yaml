@@ -3,7 +3,7 @@ services:
     name: social-media-api
     env: python
     buildCommand: "./build.sh"
-    startCommand: "gunicorn social_media_api.wsgi:application"
+    startCommand: "gunicorn --chdir social_media_api wsgi:application"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -16,7 +16,9 @@ services:
       - key: WEB_CONCURRENCY
         value: 4
       - key: PYTHONPATH
-        value: /opt/render/project/src
+        value: .
+      - key: DJANGO_SETTINGS_MODULE
+        value: social_media_api.settings
 
 databases:
   - name: social_media_db

@@ -4,9 +4,12 @@ services:
     env: python
     plan: starter
     buildCommand: |
-      pip install --upgrade pip wheel setuptools
-      pip install -r requirements.txt
+      python -m pip install --upgrade pip
+      pip install wheel
+      pip install setuptools --upgrade
+      pip install --no-cache-dir -r requirements.txt
     startCommand: |
+      python manage.py collectstatic --noinput
       python manage.py migrate --noinput
       gunicorn social_media_api.wsgi:application --timeout 120
     envVars:
@@ -24,6 +27,8 @@ services:
         value: "True"
       - key: ALLOWED_HOSTS
         value: ".onrender.com"
+      - key: PYTHONUNBUFFERED
+        value: "1"
 
 databases:
   - name: social_media_db

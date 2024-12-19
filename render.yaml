@@ -16,6 +16,11 @@ services:
         fromDatabase:
           name: social_media_db
           property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: social-media-cache
+          property: connectionString
       - key: SECRET_KEY
         generateValue: true
       - key: PYTHON_VERSION
@@ -39,6 +44,12 @@ services:
       maxInstances: 3
       targetMemoryPercent: 75
       targetCPUPercent: 75
+
+  - type: redis
+    name: social-media-cache
+    plan: starter
+    maxmemoryPolicy: noeviction
+    ipAllowList: [] # All IPs are allowed
 
 databases:
   - name: social_media_db

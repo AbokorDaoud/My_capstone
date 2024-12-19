@@ -1,1 +1,1 @@
-web: cd /opt/render/project/src && python -m gunicorn social_media_api.wsgi:application --log-level debug
+web: python -m gunicorn social_media_api.wsgi:application --bind 0.0.0.0:$PORT --workers 4 --threads 8

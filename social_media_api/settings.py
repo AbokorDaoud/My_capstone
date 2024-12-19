@@ -296,6 +296,11 @@ CORS_ALLOW_HEADERS = [
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 
+# Superuser settings
+DJANGO_SUPERUSER_USERNAME = 'Abou'
+DJANGO_SUPERUSER_PASSWORD = 'Newabou22'
+DJANGO_SUPERUSER_EMAIL = 'abokordaud22@gmail.com'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 

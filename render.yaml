@@ -3,55 +3,25 @@ services:
     name: social-media-api
     env: python
     plan: starter
-    buildCommand: |
-      # Update and install PostgreSQL client
-      apt-get update
-      apt-get install -y postgresql-client
-      
-      # Install Python dependencies
-      pip install --upgrade pip
-      pip install -r requirements.txt
-      python manage.py collectstatic --no-input
-    startCommand: |
-      python manage.py migrate
-      gunicorn social_media_api.wsgi:application --log-level debug
-    healthCheckPath: /healthz/
-    autoDeploy: true
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn social_media_api.wsgi:application --timeout 120
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.7
       - key: DATABASE_URL
         fromDatabase:
           name: social_media_db
           property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: social-media-cache
-          property: connectionString
       - key: SECRET_KEY
         generateValue: true
-      - key: PYTHON_VERSION
-        value: 3.11.7
       - key: DJANGO_SETTINGS_MODULE
         value: social_media_api.settings
-      - key: PYTHONPATH
-        value: .
       - key: DEBUG
-        value: "False"
+        value: "True"
       - key: ALLOWED_HOSTS
         value: ".onrender.com"
-      - key: CORS_ALLOWED_ORIGINS
-        value: "https://*.onrender.com"
-      - key: CSRF_TRUSTED_ORIGINS
-        value: "https://*.onrender.com"
-
-  - type: redis
-    name: social-media-cache
-    plan: starter
-    maxmemoryPolicy: noeviction
-    ipAllowList: []
 
 databases:
   - name: social_media_db
     databaseName: social_media_db
     plan: starter
-    ipAllowList: []

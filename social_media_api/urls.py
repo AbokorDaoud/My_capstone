@@ -29,27 +29,25 @@ schema_view = get_schema_view(
     openapi.Info(
         title="Social Media API",
         default_version='v1',
-        description="API documentation for Social Media Platform",
+        description="API for Social Media Platform",
         terms_of_service="https://www.google.com/policies/terms/",
-        contact=openapi.Contact(email="contact@snippets.local"),
+        contact=openapi.Contact(email="contact@socialmedia.local"),
         license=openapi.License(name="BSD License"),
     ),
     public=True,
-    permission_classes=[permissions.AllowAny],
+    permission_classes=(permissions.AllowAny,),
+    patterns=[
+        path('api/', include('api.urls')),
+    ],
 )
 
 def health_check(request):
     return JsonResponse({"status": "healthy"}, status=200)
 
 urlpatterns = [
-    path('', RedirectView.as_view(url='/api/', permanent=False)),
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
-    path('api-auth/', include('rest_framework.urls')),
-    path('accounts/profile/', lambda request: redirect('/api/profiles/me/')),
     path('healthz/', health_check, name='health_check'),
-    
-    # Swagger URLs
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),

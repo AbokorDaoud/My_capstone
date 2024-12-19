@@ -23,12 +23,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY")
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-your-default-key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False').lower()== 'True'
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS").split(",")
+DEBUG = 'RENDER' not in os.environ
 
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
@@ -92,17 +92,12 @@ WSGI_APPLICATION = 'social_media_api.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'abokor_django_render',
-        'USER': 'abokor_django_render_user',
-        'PASSWORD': '96dvJFC2DQ0f8lz26UKKqBdEUZNE4oVc',
-        'HOST': 'dpg-ctgnlql2ng1s738lel90-a.oregon-postgres.render.com',
-        'PORT': '5432',
-    }
+    'default': dj_database_url.config(
+        default='postgres://abokor_django_render_user:96dvJFC2DQ0f8lz26UKKqBdEUZNE4oVc@dpg-ctgnlql2ng1s738lel90-a.oregon-postgres.render.com/abokor_django_render',
+        conn_max_age=600
+    )
 }
-database_url=os.environ.get('DATABASE_URL')
-DATABASES['default']=dj_database_url.parse(database_url)
+
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 

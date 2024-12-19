@@ -4,23 +4,17 @@ services:
     env: python
     plan: starter
     buildCommand: |
-      # Install system dependencies
+      # Update and install PostgreSQL client
       apt-get update
-      apt-get install -y \
-        postgresql \
-        postgresql-contrib \
-        libpq-dev \
-        python3-dev \
-        gcc \
-        g++ \
-        make
+      apt-get install -y postgresql-client
+      
       # Install Python dependencies
-      python -m pip install --upgrade pip
-      pip install wheel setuptools
-      pip install psycopg2==2.9.9
+      pip install --upgrade pip
       pip install -r requirements.txt
       python manage.py collectstatic --no-input
-    startCommand: gunicorn social_media_api.wsgi:application --workers 4 --threads 2 --timeout 120 --log-level debug
+    startCommand: |
+      python manage.py migrate
+      gunicorn social_media_api.wsgi:application --log-level debug
     healthCheckPath: /healthz/
     autoDeploy: true
     envVars:
@@ -37,8 +31,6 @@ services:
         generateValue: true
       - key: PYTHON_VERSION
         value: 3.11.7
-      - key: WEB_CONCURRENCY
-        value: 4
       - key: DJANGO_SETTINGS_MODULE
         value: social_media_api.settings
       - key: PYTHONPATH
@@ -51,17 +43,12 @@ services:
         value: "https://*.onrender.com"
       - key: CSRF_TRUSTED_ORIGINS
         value: "https://*.onrender.com"
-    scaling:
-      minInstances: 1
-      maxInstances: 3
-      targetMemoryPercent: 75
-      targetCPUPercent: 75
 
   - type: redis
     name: social-media-cache
     plan: starter
     maxmemoryPolicy: noeviction
-    ipAllowList: [] # All IPs are allowed
+    ipAllowList: []
 
 databases:
   - name: social_media_db

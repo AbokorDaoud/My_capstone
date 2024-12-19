@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 from datetime import timedelta
 import dj_database_url
+from urllib.parse import urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -94,16 +95,36 @@ WSGI_APPLICATION = 'social_media_api.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'abokor_django_render',
-        'USER': 'abokor_django_render_user',
-        'PASSWORD': '96dvJFC2DQ0f8lz26UKKqBdEUZNE4oVc',
-        'HOST': 'dpg-ctgnlql2ng1s738lel90-a.oregon-postgres.render.com',
-        'PORT': '5432',
+database_url = os.getenv('DATABASE_URL', '')
+
+if database_url:
+    # Parse the URL
+    db_info = urlparse(database_url)
+    
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': db_info.path[1:],  # Remove leading slash
+            'USER': db_info.username,
+            'PASSWORD': db_info.password,
+            'HOST': db_info.hostname,
+            'PORT': db_info.port or '5432',
+            'OPTIONS': {
+                'sslmode': 'require',
+            },
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+
+# Ensure connections are closed properly
+CONN_MAX_AGE = 60
+CONN_HEALTH_CHECKS = True
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

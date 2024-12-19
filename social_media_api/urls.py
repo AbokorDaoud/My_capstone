@@ -23,6 +23,7 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from django.views.generic import RedirectView
+from django.http import JsonResponse
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -37,12 +38,16 @@ schema_view = get_schema_view(
     permission_classes=[permissions.AllowAny],
 )
 
+def health_check(request):
+    return JsonResponse({"status": "healthy"}, status=200)
+
 urlpatterns = [
     path('', RedirectView.as_view(url='/api/', permanent=False)),
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
     path('api-auth/', include('rest_framework.urls')),
     path('accounts/profile/', lambda request: redirect('/api/profiles/me/')),
+    path('healthz/', health_check, name='health_check'),
     
     # Swagger URLs
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),

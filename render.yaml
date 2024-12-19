@@ -4,15 +4,11 @@ services:
     env: python
     plan: starter
     buildCommand: |
-      # Install build essentials
-      apt-get update && apt-get install -y build-essential python3-dev
-      # Upgrade pip in a safe way
-      python -m pip install --upgrade pip
-      # Install requirements
-      pip install -r requirements.txt
+      chmod +x build_scripts/install_dependencies.sh
+      ./build_scripts/install_dependencies.sh
     startCommand: |
       python manage.py migrate --noinput
-      gunicorn social_media_api.wsgi:application --workers 2 --timeout 120
+      gunicorn social_media_api.wsgi:application --workers 2 --timeout 120 --max-requests 1000
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.7
@@ -32,6 +28,8 @@ services:
         value: "1"
       - key: PIP_NO_CACHE_DIR
         value: "1"
+      - key: LANG
+        value: "en_US.UTF-8"
 
 databases:
   - name: social_media_db

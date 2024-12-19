@@ -4,14 +4,15 @@ services:
     env: python
     plan: starter
     buildCommand: |
+      # Install build essentials
+      apt-get update && apt-get install -y build-essential python3-dev
+      # Upgrade pip in a safe way
       python -m pip install --upgrade pip
-      pip install wheel
-      pip install setuptools --upgrade
-      pip install --no-cache-dir -r requirements.txt
+      # Install requirements
+      pip install -r requirements.txt
     startCommand: |
-      python manage.py collectstatic --noinput
       python manage.py migrate --noinput
-      gunicorn social_media_api.wsgi:application --timeout 120
+      gunicorn social_media_api.wsgi:application --workers 2 --timeout 120
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.7
@@ -28,6 +29,8 @@ services:
       - key: ALLOWED_HOSTS
         value: ".onrender.com"
       - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: PIP_NO_CACHE_DIR
         value: "1"
 
 databases:

@@ -6,27 +6,35 @@ from .models import UserProfile, Post
 # User Profile Admin
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'bio', 'created_at', 'updated_at')
-    list_filter = ('created_at', 'updated_at')
+    list_display = ('user', 'bio', 'is_verified', 'created_at', 'updated_at')
+    list_filter = ('is_verified', 'created_at', 'updated_at')
     search_fields = ('user__username', 'bio')
     readonly_fields = ('created_at', 'updated_at')
     
-    actions = ['verify_profiles']
+    actions = ['verify_profiles', 'unverify_profiles']
     
     def verify_profiles(self, request, queryset):
         queryset.update(is_verified=True)
     verify_profiles.short_description = "Mark selected profiles as verified"
 
+    def unverify_profiles(self, request, queryset):
+        queryset.update(is_verified=False)
+    unverify_profiles.short_description = "Mark selected profiles as unverified"
+
 # Post Admin
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ('author', 'content', 'created_at', 'updated_at', 'is_active')
-    list_filter = ('created_at', 'updated_at', 'is_active')
+    list_display = ('author', 'content_preview', 'is_active', 'created_at', 'updated_at')
+    list_filter = ('is_active', 'created_at', 'updated_at')
     search_fields = ('author__username', 'content')
     readonly_fields = ('created_at', 'updated_at')
     
     actions = ['activate_posts', 'deactivate_posts']
     
+    def content_preview(self, obj):
+        return obj.content[:50] + '...' if len(obj.content) > 50 else obj.content
+    content_preview.short_description = 'Content Preview'
+
     def activate_posts(self, request, queryset):
         queryset.update(is_active=True)
     activate_posts.short_description = "Mark selected posts as active"

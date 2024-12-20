@@ -26,9 +26,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-your-default-key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+DEBUG = True  # Temporarily enable debug for error reporting
 
-ALLOWED_HOSTS = ['social-media-alx-project.onrender.com', 'localhost', '127.0.0.1', '*']
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -92,7 +92,8 @@ WSGI_APPLICATION = 'social_media_api.wsgi.application'
 DATABASES = {
     'default': dj_database_url.config(
         default='sqlite:///db.sqlite3',
-        conn_max_age=600
+        conn_max_age=600,
+        conn_health_checks=True,
     )
 }
 
@@ -131,7 +132,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATICFILES_DIRS = []  # Remove STATICFILES_DIRS if directory doesn't exist
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files
@@ -229,14 +230,44 @@ CORS_ALLOW_HEADERS = [
 # Security Settings
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = False
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-CSRF_TRUSTED_ORIGINS = ['https://social-media-alx-project.onrender.com']
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+CSRF_TRUSTED_ORIGINS = [
+    'https://social-media-alx-project.onrender.com',
+    'http://social-media-alx-project.onrender.com'
+]
 
 # URL Configuration
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
 APPEND_SLASH = True
+
+# Admin configuration
+ADMIN_URL = 'admin/'
+LOGIN_URL = 'admin:login'
+LOGIN_REDIRECT_URL = 'admin:index'
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

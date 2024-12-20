@@ -15,21 +15,19 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include, re_path
-from django.shortcuts import redirect
+from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from rest_framework import permissions
 from django.views.generic import RedirectView
-from django.http import JsonResponse
 
-def health_check(request):
-    return JsonResponse({"status": "healthy"}, status=200)
+admin.site.site_header = 'Social Media Admin'
+admin.site.site_title = 'Social Media Admin Portal'
+admin.site.index_title = 'Welcome to Social Media Admin Portal'
 
 urlpatterns = [
+    path('', RedirectView.as_view(url='/admin/', permanent=True)),
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
-    path('healthz/', health_check, name='health_check'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG:

@@ -11,7 +11,7 @@ gunicorn==21.2.0
 --only-binary :all: Pillow==10.1.0
 
 # Database
-psycopg2-binary==2.9.6
+psycopg2-binary==2.8.6
 dj-database-url==2.1.0
 
 # Static Files

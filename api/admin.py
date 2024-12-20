@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from .models import UserProfile, Post, SocialToken, SocialApp
+from .models import UserProfile, Post
 
 # User Profile Admin
 @admin.register(UserProfile)
@@ -34,21 +34,6 @@ class PostAdmin(admin.ModelAdmin):
     def deactivate_posts(self, request, queryset):
         queryset.update(is_active=False)
     deactivate_posts.short_description = "Mark selected posts as inactive"
-
-# Social Token Admin
-@admin.register(SocialToken)
-class SocialTokenAdmin(admin.ModelAdmin):
-    list_display = ('user', 'token_type', 'created_at', 'expires_at')
-    list_filter = ('token_type', 'created_at', 'expires_at')
-    search_fields = ('user__username', 'token_type')
-    readonly_fields = ('created_at',)
-
-# Social App Admin
-@admin.register(SocialApp)
-class SocialAppAdmin(admin.ModelAdmin):
-    list_display = ('name', 'provider', 'client_id')
-    list_filter = ('provider',)
-    search_fields = ('name', 'provider', 'client_id')
 
 # Customize User Admin
 class CustomUserAdmin(UserAdmin):

@@ -8,7 +8,7 @@ services:
       pip install -r requirements.txt
       python manage.py collectstatic --no-input
       python manage.py migrate
-      python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); user = User.objects.get(username='Abou'); user.is_staff = True; user.is_superuser = True; user.save()"
+      python create_superuser.py
     startCommand: |
       python manage.py migrate --noinput
       gunicorn social_media_api.wsgi:application --workers 2 --timeout 120 --max-requests 1000
@@ -24,15 +24,17 @@ services:
       - key: DJANGO_SETTINGS_MODULE
         value: social_media_api.settings
       - key: DEBUG
-        value: "True"
+        value: "False"
       - key: ALLOWED_HOSTS
-        value: ".onrender.com"
+        value: ".onrender.com,localhost,127.0.0.1"
       - key: PYTHONUNBUFFERED
         value: "1"
-      - key: PIP_NO_CACHE_DIR
-        value: "1"
-      - key: LANG
-        value: "en_US.UTF-8"
+      - key: DJANGO_SUPERUSER_USERNAME
+        value: "admin"
+      - key: DJANGO_SUPERUSER_EMAIL
+        value: "admin@example.com"
+      - key: DJANGO_SUPERUSER_PASSWORD
+        generateValue: true
 
 databases:
   - name: social_media_db

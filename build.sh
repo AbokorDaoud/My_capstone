@@ -2,15 +2,15 @@
 # exit on error
 set -o errexit
 
-# Upgrade pip and install wheel first
-pip install --upgrade pip
-pip install wheel
+# Install build dependencies
+pip install --upgrade pip setuptools wheel
 
-# Install Pillow first
-pip install --no-cache-dir Pillow==10.1.0
+# Install packages that need compilation separately
+pip install --no-binary :all: psycopg2-binary==2.9.9
+pip install --no-binary :all: Pillow==10.1.0
 
 # Install remaining requirements
-pip install -r requirements.txt
+grep -v "psycopg2-binary\|Pillow" requirements.txt | pip install -r /dev/stdin
 
 python manage.py collectstatic --no-input
 python manage.py migrate --noinput

@@ -22,9 +22,6 @@ whitenoise==6.6.0
 # Authentication
 django-allauth==0.58.2
 
-# Cache
-django-redis==5.4.0
-
 # Development
 django-debug-toolbar==4.2.0
 python-dotenv==1.0.0

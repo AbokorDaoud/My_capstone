@@ -1,7 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import UserProfile, Post
+from django.contrib.auth.models import User
+from .models import UserProfile, Post, SocialToken, SocialApp
 
+# User Profile Admin
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'bio', 'created_at', 'updated_at')
@@ -15,6 +17,7 @@ class UserProfileAdmin(admin.ModelAdmin):
         queryset.update(is_verified=True)
     verify_profiles.short_description = "Mark selected profiles as verified"
 
+# Post Admin
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
     list_display = ('author', 'content', 'created_at', 'updated_at', 'is_active')
@@ -31,3 +34,29 @@ class PostAdmin(admin.ModelAdmin):
     def deactivate_posts(self, request, queryset):
         queryset.update(is_active=False)
     deactivate_posts.short_description = "Mark selected posts as inactive"
+
+# Social Token Admin
+@admin.register(SocialToken)
+class SocialTokenAdmin(admin.ModelAdmin):
+    list_display = ('user', 'token_type', 'created_at', 'expires_at')
+    list_filter = ('token_type', 'created_at', 'expires_at')
+    search_fields = ('user__username', 'token_type')
+    readonly_fields = ('created_at',)
+
+# Social App Admin
+@admin.register(SocialApp)
+class SocialAppAdmin(admin.ModelAdmin):
+    list_display = ('name', 'provider', 'client_id')
+    list_filter = ('provider',)
+    search_fields = ('name', 'provider', 'client_id')
+
+# Customize User Admin
+class CustomUserAdmin(UserAdmin):
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'date_joined')
+    list_filter = ('is_staff', 'is_superuser', 'is_active', 'date_joined')
+    search_fields = ('username', 'first_name', 'last_name', 'email')
+    ordering = ('-date_joined',)
+
+# Unregister the default User admin and register our custom one
+admin.site.unregister(User)
+admin.site.register(User, CustomUserAdmin)

@@ -26,9 +26,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-your-default-key')
 
 # Debug settings
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['social-media-alx-project.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -229,25 +229,34 @@ CORS_ALLOW_HEADERS = [
 
 # Security Settings
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-CSRF_TRUSTED_ORIGINS = ['https://social-media-alx-project.onrender.com']
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_HSTS_SECONDS = 31536000  # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+CSRF_TRUSTED_ORIGINS = [
+    'https://social-media-alx-project.onrender.com',
+    'http://social-media-alx-project.onrender.com'
+]
+
+# Session settings
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 1209600
+SESSION_COOKIE_NAME = 'sessionid'
+SESSION_COOKIE_HTTPONLY = True
+
+# Authentication settings
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Admin settings
+ADMIN_URL = 'admin/'
+LOGIN_URL = 'admin:login'
+LOGIN_REDIRECT_URL = 'admin:index'
 
 # URL Configuration
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
 APPEND_SLASH = True
-
-# Admin configuration
-ADMIN_URL = 'admin/'
-LOGIN_URL = 'admin:login'
-LOGIN_REDIRECT_URL = 'admin:index'
 
 # Logging configuration
 LOGGING = {

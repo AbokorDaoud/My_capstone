@@ -11,6 +11,7 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
+from rest_framework.views import APIView
 
 class UserRegistrationView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -99,6 +100,12 @@ class FeedView(generics.ListAPIView):
         following_users = user_profile.following.all()
         following_users_ids = [profile.user.id for profile in following_users]
         return Post.objects.filter(author_id__in=following_users_ids)
+
+class HealthCheckView(APIView):
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        return Response({"status": "healthy"}, status=status.HTTP_200_OK)
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
 class UserProfileViewSet(viewsets.ModelViewSet):

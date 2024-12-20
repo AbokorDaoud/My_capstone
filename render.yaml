@@ -4,7 +4,20 @@ services:
     env: python
     plan: starter
     buildCommand: |
+      # Install system dependencies
+      apt-get update
+      apt-get install -y --no-install-recommends \
+        build-essential \
+        python3-dev \
+        libpq-dev \
+        libjpeg-dev \
+        zlib1g-dev \
+        libpng-dev
+      # Install Python packages
       python -m pip install --upgrade pip
+      pip install --upgrade setuptools wheel
+      pip install --no-cache-dir Pillow==9.5.0
+      pip install --no-cache-dir psycopg2-binary==2.9.6
       pip install -r requirements.txt
       python manage.py collectstatic --no-input
       python manage.py migrate
@@ -14,7 +27,7 @@ services:
       gunicorn social_media_api.wsgi:application --workers 2 --timeout 120 --max-requests 1000
     envVars:
       - key: PYTHON_VERSION
-        value: 3.10.13
+        value: 3.11.7
       - key: DATABASE_URL
         fromDatabase:
           name: social_media_db
@@ -28,7 +41,7 @@ services:
       - key: ALLOWED_HOSTS
         value: ".onrender.com,localhost,127.0.0.1"
       - key: PYTHONUNBUFFERED
-        value: "1"
+        value: "true"
       - key: DJANGO_SUPERUSER_USERNAME
         value: "admin"
       - key: DJANGO_SUPERUSER_EMAIL

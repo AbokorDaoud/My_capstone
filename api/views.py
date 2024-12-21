@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework import viewsets, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from django.contrib.auth.models import User
 from .models import Post, UserProfile
 from .serializers import UserSerializer, PostSerializer, UserProfileSerializer
@@ -49,35 +49,34 @@ class UserLoginView(generics.GenericAPIView):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    
+
     def get_permissions(self):
-        if self.action == 'create':
-            return [AllowAny()]
-        return [IsAuthenticated()]
+        if self.action in ['create', 'list', 'retrieve']:
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
 
     @action(detail=True, methods=['post'])
     def follow(self, request, pk=None):
         user_to_follow = self.get_object()
-        if user_to_follow == request.user:
-            return Response(
-                {'error': 'You cannot follow yourself'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        request.user.profile.following.add(user_to_follow.profile)
-        return Response({'status': 'following'})
+        user_profile = request.user.userprofile
+        user_profile.following.add(user_to_follow)
+        return Response(status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def unfollow(self, request, pk=None):
         user_to_unfollow = self.get_object()
-        request.user.profile.following.remove(user_to_unfollow.profile)
-        return Response({'status': 'unfollowed'})
+        user_profile = request.user.userprofile
+        user_profile.following.remove(user_to_unfollow)
+        return Response(status=status.HTTP_200_OK)
 
 class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
-        return Post.objects.all()
+        return Post.objects.all().order_by('-created_at')
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -96,7 +95,7 @@ class FeedView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        user_profile = self.request.user.profile
+        user_profile = self.request.user.userprofile
         following_users = user_profile.following.all()
         following_users_ids = [profile.user.id for profile in following_users]
         return Post.objects.filter(author_id__in=following_users_ids)
@@ -111,7 +110,7 @@ class HealthCheckView(APIView):
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_object(self):
         pk = self.kwargs.get('pk')

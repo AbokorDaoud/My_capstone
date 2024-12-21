@@ -16,8 +16,6 @@ services:
       # Install Python packages
       python -m pip install --upgrade pip
       pip install --upgrade setuptools wheel
-      pip install --no-cache-dir Pillow==9.5.0
-      pip install --no-cache-dir psycopg2-binary==2.9.6
       pip install -r requirements.txt
       python manage.py collectstatic --no-input
       python manage.py migrate
@@ -48,6 +46,10 @@ services:
         value: "admin@example.com"
       - key: DJANGO_SUPERUSER_PASSWORD
         generateValue: true
+    disk:
+      name: media
+      mountPath: /opt/render/project/src/media
+      sizeGB: 1
 
 databases:
   - name: social_media_db

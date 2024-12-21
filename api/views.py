@@ -1,8 +1,10 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status, generics
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
+from rest_framework.views import APIView
+from rest_framework.reverse import reverse
 from django.contrib.auth.models import User
 from .models import Post, UserProfile
 from .serializers import UserSerializer, PostSerializer, UserProfileSerializer
@@ -11,7 +13,18 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
-from rest_framework.views import APIView
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def api_root(request, format=None):
+    return Response({
+        'users': reverse('api:user-list', request=request, format=format),
+        'posts': reverse('api:post-list', request=request, format=format),
+        'profiles': reverse('api:profile-list', request=request, format=format),
+        'feed': reverse('api:feed', request=request, format=format),
+        'register': reverse('api:register', request=request, format=format),
+        'login': reverse('api:login', request=request, format=format),
+    })
 
 class UserRegistrationView(generics.CreateAPIView):
     queryset = User.objects.all()

@@ -3,17 +3,18 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     UserViewSet, PostViewSet, FeedView, UserProfileViewSet,
-    UserRegistrationView, UserLoginView
+    UserRegistrationView, UserLoginView, api_root
 )
 
-router = DefaultRouter()
-router.register(r'users', UserViewSet)
+router = DefaultRouter(root_renderers=None)  # Disable default API root view
+router.register(r'users', UserViewSet, basename='user')
 router.register(r'posts', PostViewSet, basename='post')
 router.register(r'profiles', UserProfileViewSet, basename='profile')
 
 app_name = 'api'  # Add namespace to avoid URL name conflicts
 
 urlpatterns = [
+    path('', api_root, name='api-root'),
     path('', include(router.urls)),
     path('feed/', FeedView.as_view(), name='feed'),
     path('auth/register/', UserRegistrationView.as_view(), name='register'),

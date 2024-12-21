@@ -5,12 +5,23 @@ from django.utils import timezone
 # Create your models here.
 
 class Post(models.Model):
+    VISIBILITY_CHOICES = [
+        ('public', 'Public'),
+        ('private', 'Private'),
+        ('followers', 'Followers Only'),
+    ]
+    
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     content = models.TextField()
     image = models.ImageField(upload_to='posts/', null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
+    visibility = models.CharField(
+        max_length=10,
+        choices=VISIBILITY_CHOICES,
+        default='public'
+    )
 
     class Meta:
         ordering = ['-created_at']

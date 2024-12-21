@@ -105,13 +105,21 @@ class PostViewSet(viewsets.ModelViewSet):
 
 class FeedView(generics.ListAPIView):
     serializer_class = PostSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            # Return public posts for unauthenticated users
+            return Post.objects.filter(visibility='public').order_by('-created_at')
+            
+        # Return personalized feed for authenticated users
         user_profile = self.request.user.userprofile
         following_users = user_profile.following.all()
         following_users_ids = [profile.user.id for profile in following_users]
-        return Post.objects.filter(author_id__in=following_users_ids)
+        following_users_ids.append(self.request.user.id)  # Include user's own posts
+        return Post.objects.filter(
+            author_id__in=following_users_ids
+        ).order_by('-created_at')
 
 class HealthCheckView(APIView):
     permission_classes = [AllowAny]

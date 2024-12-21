@@ -3,17 +3,18 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     UserViewSet, PostViewSet, FeedView, UserProfileViewSet,
-    UserRegistrationView, UserLoginView, HealthCheckView
+    UserRegistrationView, UserLoginView
 )
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
 router.register(r'posts', PostViewSet, basename='post')
-router.register(r'profiles', UserProfileViewSet)
+router.register(r'profiles', UserProfileViewSet, basename='profile')
+
+app_name = 'api'  # Add namespace to avoid URL name conflicts
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('healthz/', HealthCheckView.as_view(), name='health_check'),
     path('feed/', FeedView.as_view(), name='feed'),
     path('auth/register/', UserRegistrationView.as_view(), name='register'),
     path('auth/login/', UserLoginView.as_view(), name='login'),

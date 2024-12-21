@@ -47,7 +47,6 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
-    'Pillow',  # Add Pillow to installed apps
 ]
 
 SITE_ID = 1

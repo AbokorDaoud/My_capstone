@@ -4,6 +4,14 @@ from django.utils import timezone
 
 # Create your models here.
 
+def user_profile_image_path(instance, filename):
+    # File will be uploaded to MEDIA_ROOT/profile_pics/user_<id>/<filename>
+    return f'profile_pics/user_{instance.user.id}/{filename}'
+
+def post_image_path(instance, filename):
+    # File will be uploaded to MEDIA_ROOT/post_images/user_<id>/<filename>
+    return f'post_images/user_{instance.author.id}/{filename}'
+
 class Post(models.Model):
     VISIBILITY_CHOICES = [
         ('public', 'Public'),
@@ -13,7 +21,7 @@ class Post(models.Model):
     
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     content = models.TextField()
-    image = models.ImageField(upload_to='posts/', null=True, blank=True)
+    image = models.ImageField(upload_to=post_image_path, null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
@@ -32,7 +40,7 @@ class Post(models.Model):
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     bio = models.TextField(max_length=500, blank=True)
-    profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
+    profile_picture = models.ImageField(upload_to=user_profile_image_path, null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     is_verified = models.BooleanField(default=False)

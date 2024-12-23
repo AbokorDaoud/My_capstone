@@ -17,6 +17,10 @@ class UserSerializer(serializers.ModelSerializer):
         UserProfile.objects.create(user=user)
         return user
 
+class UserLoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
 class UserProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
     followers = serializers.SerializerMethodField()

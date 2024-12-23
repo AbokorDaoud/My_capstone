@@ -5,24 +5,24 @@ services:
     region: oregon
     plan: starter
     buildCommand: |
+      # Update package lists
+      apt-get update
       # Install system dependencies
-      apt-get update && apt-get install -y \
-        python3-dev \
+      apt-get install -y \
         python3-pip \
+        python3-dev \
         python3-setuptools \
         python3-wheel \
         gcc \
+        libpq-dev \
         libjpeg-dev \
-        libpng-dev \
-        libtiff-dev \
-        libfreetype6-dev \
-        liblcms2-dev \
-        libwebp-dev \
-        zlib1g-dev \
-        libpq-dev
-      # Install Python packages
-      pip install --upgrade pip wheel setuptools
+        libpng-dev
+      # Upgrade pip and install wheel
+      python -m pip install --upgrade pip
+      python -m pip install wheel
+      # Install project dependencies
       pip install -r requirements.txt
+      # Run Django commands
       python manage.py collectstatic --noinput
     startCommand: gunicorn social_media_api.wsgi:application
     envVars:

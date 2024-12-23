@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     UserViewSet, PostViewSet, FeedView, UserProfileViewSet,
-    UserRegistrationView, UserLoginView, api_root
+    UserRegistrationView, UserLoginView, api_root, health_check
 )
 
 router = DefaultRouter(root_renderers=None)  # Disable default API root view
@@ -21,4 +21,5 @@ urlpatterns = [
     path('auth/login/', UserLoginView.as_view(), name='login'),
     path('auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('healthz/', health_check, name='health-check'),
 ]

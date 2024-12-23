@@ -24,6 +24,7 @@ def api_root(request, format=None):
         'feed': reverse('api:feed', request=request, format=format),
         'register': reverse('api:register', request=request, format=format),
         'login': reverse('api:login', request=request, format=format),
+        'health-check': reverse('api:health-check', request=request, format=format),
     })
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -120,6 +121,14 @@ class FeedView(generics.ListAPIView):
         return Post.objects.filter(
             author_id__in=following_users_ids
         ).order_by('-created_at')
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def health_check(request):
+    """
+    Health check endpoint for monitoring service status
+    """
+    return Response({"status": "healthy"}, status=status.HTTP_200_OK)
 
 class HealthCheckView(APIView):
     permission_classes = [AllowAny]

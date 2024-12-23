@@ -21,7 +21,7 @@ class Post(models.Model):
     
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     content = models.TextField()
-    image = models.ImageField(upload_to=post_image_path, null=True, blank=True)
+    image = models.FileField(upload_to=post_image_path, null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
@@ -40,7 +40,7 @@ class Post(models.Model):
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     bio = models.TextField(max_length=500, blank=True)
-    profile_picture = models.ImageField(upload_to=user_profile_image_path, null=True, blank=True)
+    profile_picture = models.FileField(upload_to=user_profile_image_path, null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     is_verified = models.BooleanField(default=False)

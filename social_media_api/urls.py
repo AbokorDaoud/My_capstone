@@ -7,20 +7,18 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import RedirectView
 from django.http import JsonResponse
-from rest_framework.documentation import include_docs_urls
 
 admin.site.site_header = 'Social Media Admin'
 admin.site.site_title = 'Social Media Admin Portal'
 admin.site.index_title = 'Welcome to Social Media Admin Portal'
 
 def healthz(request):
-    return JsonResponse({"status": "healthy"}, status=200)
+    return JsonResponse({"status": "ok"})
 
 urlpatterns = [
     path('', RedirectView.as_view(url='/admin/', permanent=True)),
     path('admin/', admin.site.urls),
     path('api/', include(('api.urls', 'api'), namespace='api')),
-    path('docs/', include_docs_urls(title='Social Media API')),
     path('healthz/', healthz, name='healthz'),
 ]
 

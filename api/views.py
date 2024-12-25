@@ -87,6 +87,7 @@ class UserViewSet(viewsets.ModelViewSet):
         Follow a user.
         """
         try:
+            # Get the user to follow
             user_to_follow = self.get_object()
             
             # Check if trying to follow self
@@ -96,18 +97,21 @@ class UserViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Get or create user profile
-            user_profile, created = UserProfile.objects.get_or_create(user=request.user)
+            # Get or create user profiles for both users
+            follower_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+            following_profile, _ = UserProfile.objects.get_or_create(user=user_to_follow)
             
             # Check if already following
-            if user_to_follow in user_profile.following.all():
+            if following_profile.user in follower_profile.following.all():
                 return Response(
                     {"detail": "You are already following this user."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
             # Add to following
-            user_profile.following.add(user_to_follow)
+            follower_profile.following.add(user_to_follow)
+            follower_profile.save()
+            
             return Response(
                 {"detail": f"You are now following {user_to_follow.username}"},
                 status=status.HTTP_200_OK
@@ -129,6 +133,7 @@ class UserViewSet(viewsets.ModelViewSet):
         Unfollow a user.
         """
         try:
+            # Get the user to unfollow
             user_to_unfollow = self.get_object()
             
             # Check if trying to unfollow self
@@ -138,18 +143,21 @@ class UserViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Get or create user profile
-            user_profile, created = UserProfile.objects.get_or_create(user=request.user)
+            # Get or create user profiles for both users
+            follower_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+            following_profile, _ = UserProfile.objects.get_or_create(user=user_to_unfollow)
             
             # Check if not following
-            if user_to_unfollow not in user_profile.following.all():
+            if following_profile.user not in follower_profile.following.all():
                 return Response(
                     {"detail": "You are not following this user."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
             # Remove from following
-            user_profile.following.remove(user_to_unfollow)
+            follower_profile.following.remove(user_to_unfollow)
+            follower_profile.save()
+            
             return Response(
                 {"detail": f"You have unfollowed {user_to_unfollow.username}"},
                 status=status.HTTP_200_OK

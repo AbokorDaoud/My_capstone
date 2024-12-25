@@ -67,7 +67,9 @@ class UserLoginView(generics.GenericAPIView):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-
+    
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    
     def get_permissions(self):
         if self.action in ['create', 'list', 'retrieve']:
             permission_classes = [AllowAny]
@@ -75,19 +77,99 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], url_path='follow', url_name='follow', permission_classes=[IsAuthenticated])
     def follow(self, request, pk=None):
-        user_to_follow = self.get_object()
-        user_profile = request.user.userprofile
-        user_profile.following.add(user_to_follow)
-        return Response(status=status.HTTP_200_OK)
+        """
+        Follow a user.
+        Returns HTTP 400 if:
+        - Trying to follow yourself
+        - Already following the user
+        - User doesn't exist
+        Returns HTTP 200 on success.
+        """
+        try:
+            user_to_follow = self.get_object()
+            
+            # Check if trying to follow self
+            if user_to_follow == request.user:
+                return Response(
+                    {"detail": "You cannot follow yourself."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get or create user profile
+            user_profile, created = UserProfile.objects.get_or_create(user=request.user)
+            
+            # Check if already following
+            if user_to_follow in user_profile.following.all():
+                return Response(
+                    {"detail": "You are already following this user."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Add to following
+            user_profile.following.add(user_to_follow)
+            return Response(
+                {"detail": f"You are now following {user_to_follow.username}"},
+                status=status.HTTP_200_OK
+            )
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "User not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], url_path='unfollow', url_name='unfollow', permission_classes=[IsAuthenticated])
     def unfollow(self, request, pk=None):
-        user_to_unfollow = self.get_object()
-        user_profile = request.user.userprofile
-        user_profile.following.remove(user_to_unfollow)
-        return Response(status=status.HTTP_200_OK)
+        """
+        Unfollow a user.
+        Returns HTTP 400 if:
+        - Trying to unfollow yourself
+        - Not following the user
+        - User doesn't exist
+        Returns HTTP 200 on success.
+        """
+        try:
+            user_to_unfollow = self.get_object()
+            
+            # Check if trying to unfollow self
+            if user_to_unfollow == request.user:
+                return Response(
+                    {"detail": "You cannot unfollow yourself."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get or create user profile
+            user_profile, created = UserProfile.objects.get_or_create(user=request.user)
+            
+            # Check if not following
+            if user_to_unfollow not in user_profile.following.all():
+                return Response(
+                    {"detail": "You are not following this user."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Remove from following
+            user_profile.following.remove(user_to_unfollow)
+            return Response(
+                {"detail": f"You have unfollowed {user_to_unfollow.username}"},
+                status=status.HTTP_200_OK
+            )
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "User not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer

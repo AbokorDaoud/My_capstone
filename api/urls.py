@@ -6,12 +6,13 @@ from .views import (
     UserRegistrationView, UserLoginView, api_root, health_check
 )
 
-router = DefaultRouter(root_renderers=None)  # Disable default API root view
-router.register(r'users', UserViewSet, basename='user')
-router.register(r'posts', PostViewSet, basename='post')
-router.register(r'profiles', UserProfileViewSet, basename='profile')
+# Create a router and register our viewsets with it
+router = DefaultRouter()
+router.register('users', UserViewSet)  
+router.register('posts', PostViewSet)
+router.register('profiles', UserProfileViewSet)
 
-app_name = 'api'  # Add namespace to avoid URL name conflicts
+app_name = 'api'
 
 urlpatterns = [
     path('', api_root, name='api-root'),

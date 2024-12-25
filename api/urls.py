@@ -8,9 +8,9 @@ from .views import (
 
 # Create a router and register our viewsets with it
 router = DefaultRouter()
-router.register('users', UserViewSet)  
-router.register('posts', PostViewSet)
-router.register('profiles', UserProfileViewSet)
+router.register('users', UserViewSet, basename='user')  
+router.register('posts', PostViewSet, basename='post')
+router.register('profiles', UserProfileViewSet, basename='profile')
 
 app_name = 'api'
 

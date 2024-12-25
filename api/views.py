@@ -67,25 +67,24 @@ class UserLoginView(generics.GenericAPIView):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    
     permission_classes = [IsAuthenticatedOrReadOnly]
     
     def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        """
         if self.action in ['create', 'list', 'retrieve']:
             permission_classes = [AllowAny]
+        elif self.action in ['follow', 'unfollow']:
+            permission_classes = [IsAuthenticated]
         else:
             permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]
 
-    @action(detail=True, methods=['post'], url_path='follow', url_name='follow', permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['post'], url_path='follow', url_name='follow')
     def follow(self, request, pk=None):
         """
         Follow a user.
-        Returns HTTP 400 if:
-        - Trying to follow yourself
-        - Already following the user
-        - User doesn't exist
-        Returns HTTP 200 on success.
         """
         try:
             user_to_follow = self.get_object()
@@ -124,15 +123,10 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-    @action(detail=True, methods=['post'], url_path='unfollow', url_name='unfollow', permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['post'], url_path='unfollow', url_name='unfollow')
     def unfollow(self, request, pk=None):
         """
         Unfollow a user.
-        Returns HTTP 400 if:
-        - Trying to unfollow yourself
-        - Not following the user
-        - User doesn't exist
-        Returns HTTP 200 on success.
         """
         try:
             user_to_unfollow = self.get_object()

@@ -64,25 +64,12 @@ class UserLoginView(generics.GenericAPIView):
             })
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
-    
-    def get_permissions(self):
-        if self.action in ['create', 'list', 'retrieve']:
-            permission_classes = [AllowAny]
-        else:
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
+class FollowView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    @action(detail=True, methods=['post', 'options'], url_path='follow')
-    def follow(self, request, pk=None):
-        if request.method == 'OPTIONS':
-            return Response(status=status.HTTP_200_OK)
-            
+    def post(self, request, pk):
         try:
-            user_to_follow = self.get_object()
+            user_to_follow = User.objects.get(pk=pk)
             
             if user_to_follow == request.user:
                 return Response(
@@ -117,46 +104,20 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-    @action(detail=True, methods=['post', 'options'], url_path='unfollow')
-    def unfollow(self, request, pk=None):
-        if request.method == 'OPTIONS':
-            return Response(status=status.HTTP_200_OK)
-            
-        try:
-            user_to_unfollow = self.get_object()
-            
-            if user_to_unfollow == request.user:
-                return Response(
-                    {"detail": "You cannot unfollow yourself."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            follower_profile, _ = UserProfile.objects.get_or_create(user=request.user)
-            following_profile, _ = UserProfile.objects.get_or_create(user=user_to_unfollow)
-            
-            if following_profile.user not in follower_profile.following.all():
-                return Response(
-                    {"detail": "You are not following this user."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            follower_profile.following.remove(user_to_unfollow)
-            follower_profile.save()
-            
-            return Response(
-                {"detail": f"You have unfollowed {user_to_unfollow.username}"},
-                status=status.HTTP_200_OK
-            )
-        except User.DoesNotExist:
-            return Response(
-                {"detail": "User not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            return Response(
-                {"detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+    def options(self, request, pk):
+        return Response(status=status.HTTP_200_OK)
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    
+    def get_permissions(self):
+        if self.action in ['create', 'list', 'retrieve']:
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
 
 class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer

@@ -3,7 +3,8 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     UserViewSet, PostViewSet, FeedView, UserProfileViewSet,
-    UserRegistrationView, UserLoginView, api_root, health_check
+    UserRegistrationView, UserLoginView, api_root, health_check,
+    FollowView
 )
 
 # Create a router and register our viewsets with it
@@ -23,4 +24,5 @@ urlpatterns = [
     path('auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('healthz/', health_check, name='health-check'),
+    path('users/<int:pk>/follow/', FollowView.as_view(), name='follow-user'),
 ]

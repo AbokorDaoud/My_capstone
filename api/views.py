@@ -70,45 +70,35 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     
     def get_permissions(self):
-        """
-        Instantiates and returns the list of permissions that this view requires.
-        """
         if self.action in ['create', 'list', 'retrieve']:
             permission_classes = [AllowAny]
-        elif self.action in ['follow', 'unfollow']:
-            permission_classes = [IsAuthenticated]
         else:
             permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]
 
-    @action(detail=True, methods=['post'], url_path='follow', url_name='follow')
+    @action(detail=True, methods=['post', 'options'], url_path='follow')
     def follow(self, request, pk=None):
-        """
-        Follow a user.
-        """
+        if request.method == 'OPTIONS':
+            return Response(status=status.HTTP_200_OK)
+            
         try:
-            # Get the user to follow
             user_to_follow = self.get_object()
             
-            # Check if trying to follow self
             if user_to_follow == request.user:
                 return Response(
                     {"detail": "You cannot follow yourself."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Get or create user profiles for both users
             follower_profile, _ = UserProfile.objects.get_or_create(user=request.user)
             following_profile, _ = UserProfile.objects.get_or_create(user=user_to_follow)
             
-            # Check if already following
             if following_profile.user in follower_profile.following.all():
                 return Response(
                     {"detail": "You are already following this user."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Add to following
             follower_profile.following.add(user_to_follow)
             follower_profile.save()
             
@@ -127,34 +117,29 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-    @action(detail=True, methods=['post'], url_path='unfollow', url_name='unfollow')
+    @action(detail=True, methods=['post', 'options'], url_path='unfollow')
     def unfollow(self, request, pk=None):
-        """
-        Unfollow a user.
-        """
+        if request.method == 'OPTIONS':
+            return Response(status=status.HTTP_200_OK)
+            
         try:
-            # Get the user to unfollow
             user_to_unfollow = self.get_object()
             
-            # Check if trying to unfollow self
             if user_to_unfollow == request.user:
                 return Response(
                     {"detail": "You cannot unfollow yourself."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Get or create user profiles for both users
             follower_profile, _ = UserProfile.objects.get_or_create(user=request.user)
             following_profile, _ = UserProfile.objects.get_or_create(user=user_to_unfollow)
             
-            # Check if not following
             if following_profile.user not in follower_profile.following.all():
                 return Response(
                     {"detail": "You are not following this user."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Remove from following
             follower_profile.following.remove(user_to_unfollow)
             follower_profile.save()
             

@@ -80,13 +80,13 @@ class FollowView(APIView):
             follower_profile, _ = UserProfile.objects.get_or_create(user=request.user)
             following_profile, _ = UserProfile.objects.get_or_create(user=user_to_follow)
             
-            if following_profile.user in follower_profile.following.all():
+            if following_profile in follower_profile.following.all():
                 return Response(
                     {"detail": "You are already following this user."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            follower_profile.following.add(user_to_follow)
+            follower_profile.following.add(following_profile)
             follower_profile.save()
             
             return Response(

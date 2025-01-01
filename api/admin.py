@@ -1,7 +1,18 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from .models import UserProfile, Post
+from .models import UserProfile, Post, Comment
+
+# Unregister the default User admin
+admin.site.unregister(User)
+
+# User Admin
+@admin.register(User)
+class CustomUserAdmin(UserAdmin):
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'date_joined')
+    list_filter = ('is_staff', 'is_superuser', 'is_active', 'date_joined')
+    search_fields = ('username', 'first_name', 'last_name', 'email')
+    ordering = ('-date_joined',)
 
 # User Profile Admin
 @admin.register(UserProfile)
@@ -25,7 +36,7 @@ class UserProfileAdmin(admin.ModelAdmin):
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
     list_display = ('author', 'content_preview', 'is_active', 'created_at', 'updated_at')
-    list_filter = ('is_active', 'created_at', 'updated_at')
+    list_filter = ('is_active', 'created_at', 'updated_at', 'visibility')
     search_fields = ('author__username', 'content')
     readonly_fields = ('created_at', 'updated_at')
     
@@ -43,13 +54,14 @@ class PostAdmin(admin.ModelAdmin):
         queryset.update(is_active=False)
     deactivate_posts.short_description = "Mark selected posts as inactive"
 
-# Customize User Admin
-class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'date_joined')
-    list_filter = ('is_staff', 'is_superuser', 'is_active', 'date_joined')
-    search_fields = ('username', 'first_name', 'last_name', 'email')
-    ordering = ('-date_joined',)
+# Comment Admin
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ('author', 'post', 'content_preview', 'is_active', 'created_at')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('author__username', 'content', 'post__content')
+    readonly_fields = ('created_at', 'updated_at')
 
-# Unregister the default User admin and register our custom one
-admin.site.unregister(User)
-admin.site.register(User, CustomUserAdmin)
+    def content_preview(self, obj):
+        return obj.content[:50] + '...' if len(obj.content) > 50 else obj.content
+    content_preview.short_description = 'Content Preview'

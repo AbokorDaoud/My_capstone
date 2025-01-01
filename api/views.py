@@ -6,8 +6,8 @@ from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticate
 from rest_framework.views import APIView
 from rest_framework.reverse import reverse
 from django.contrib.auth.models import User
-from .models import Post, UserProfile
-from .serializers import UserSerializer, PostSerializer, UserProfileSerializer, UserLoginSerializer
+from .models import Post, UserProfile, Comment
+from .serializers import UserSerializer, PostSerializer, UserProfileSerializer, UserLoginSerializer, CommentSerializer
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -137,6 +137,53 @@ class PostViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         return super().destroy(request, *args, **kwargs)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def like(self, request, pk=None):
+        try:
+            post = self.get_object()
+            user = request.user
+
+            if post.likes.filter(id=user.id).exists():
+                post.likes.remove(user)
+                return Response({"detail": "Post unliked"}, status=status.HTTP_200_OK)
+            else:
+                post.likes.add(user)
+                return Response({"detail": "Post liked"}, status=status.HTTP_200_OK)
+        except Post.DoesNotExist:
+            return Response(
+                {"error": "Post not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def comment(self, request, pk=None):
+        try:
+            post = self.get_object()
+            serializer = CommentSerializer(data=request.data)
+            
+            if serializer.is_valid():
+                serializer.save(post=post, author=request.user)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Post.DoesNotExist:
+            return Response(
+                {"error": "Post not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    @action(detail=True, methods=['get'])
+    def comments(self, request, pk=None):
+        try:
+            post = self.get_object()
+            comments = Comment.objects.filter(post=post, is_active=True)
+            serializer = CommentSerializer(comments, many=True)
+            return Response(serializer.data)
+        except Post.DoesNotExist:
+            return Response(
+                {"error": "Post not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 class FeedView(generics.ListAPIView):
     serializer_class = PostSerializer

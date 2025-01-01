@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Post, UserProfile
+from .models import Post, UserProfile, Comment
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -41,10 +41,30 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return [{'id': profile.user.id, 'username': profile.user.username} 
                 for profile in obj.following.all()]
 
+class CommentSerializer(serializers.ModelSerializer):
+    author_username = serializers.CharField(source='author.username', read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ('id', 'content', 'author_username', 'created_at', 'updated_at')
+        read_only_fields = ('author_username', 'created_at', 'updated_at')
+
 class PostSerializer(serializers.ModelSerializer):
     author_username = serializers.CharField(source='author.username', read_only=True)
-    
+    likes_count = serializers.SerializerMethodField()
+    is_liked = serializers.SerializerMethodField()
+    comments = CommentSerializer(many=True, read_only=True)
+
     class Meta:
         model = Post
-        fields = ('id', 'content', 'image', 'created_at', 'updated_at', 'author_username')
-        read_only_fields = ('author_username', 'created_at', 'updated_at')
+        fields = ('id', 'content', 'image', 'created_at', 'updated_at', 'author_username', 'likes_count', 'is_liked', 'comments')
+        read_only_fields = ('author_username', 'created_at', 'updated_at', 'likes_count', 'is_liked', 'comments')
+
+    def get_likes_count(self, obj):
+        return obj.likes.count()
+
+    def get_is_liked(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.likes.filter(id=request.user.id).exists()
+        return False

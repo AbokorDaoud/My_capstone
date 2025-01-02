@@ -1,6 +1,20 @@
 """
-URL configuration for social_media_api project.
+Social Media API URL Configuration
+
+This module defines the URL patterns for the social media API.
+It includes routes for user management, posts, profiles, messaging,
+and notifications.
+
+URL Structure:
+- /api/ - API root and documentation
+- /api/users/ - User management endpoints
+- /api/posts/ - Post management endpoints
+- /api/profiles/ - Profile management endpoints
+- /api/messages/ - Direct messaging endpoints
+- /api/notifications/ - Notification endpoints
+- /api/auth/ - Authentication endpoints
 """
+
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings

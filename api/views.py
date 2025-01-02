@@ -6,13 +6,18 @@ from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticate
 from rest_framework.views import APIView
 from rest_framework.reverse import reverse
 from django.contrib.auth.models import User
-from .models import Post, UserProfile, Comment
-from .serializers import UserSerializer, PostSerializer, UserProfileSerializer, UserLoginSerializer, CommentSerializer
+from .models import Post, UserProfile, Comment, Hashtag, Notification, Message
+from .serializers import (
+    UserSerializer, PostSerializer, UserProfileSerializer,
+    UserLoginSerializer, CommentSerializer, HashtagSerializer,
+    NotificationSerializer, MessageSerializer
+)
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
+import re
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -119,58 +124,143 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]
 
+    @action(detail=True, methods=['post'])
+    def follow(self, request, pk=None):
+        user_to_follow = self.get_object()
+        user = request.user
+        
+        if user == user_to_follow:
+            return Response(
+                {'detail': 'You cannot follow yourself'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        profile = UserProfile.objects.get(user=user_to_follow)
+        
+        if profile.followers.filter(id=user.id).exists():
+            profile.followers.remove(user)
+            return Response({'detail': f'You have unfollowed {user_to_follow.username}'})
+        else:
+            profile.followers.add(user)
+            # Create notification for follow
+            Notification.objects.create(
+                recipient=user_to_follow,
+                sender=user,
+                notification_type='follow'
+            )
+            return Response({'detail': f'You are now following {user_to_follow.username}'})
+
+    @action(detail=True, methods=['get'])
+    def feed(self, request, pk=None):
+        user = self.get_object()
+        following_profiles = UserProfile.objects.filter(followers=user)
+        following_users = [profile.user for profile in following_profiles]
+        posts = Post.objects.filter(author__in=following_users).order_by('-created_at')
+        serializer = PostSerializer(posts, many=True, context={'request': request})
+        return Response(serializer.data)
+
 class PostViewSet(viewsets.ModelViewSet):
+    queryset = Post.objects.all().order_by('-created_at')
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    def get_queryset(self):
-        return Post.objects.all().order_by('-created_at')
-
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        # Extract hashtags from content
+        content = self.request.data.get('content', '')
+        hashtag_pattern = r'#(\w+)'
+        hashtags = re.findall(hashtag_pattern, content)
+        
+        # Extract mentions from content
+        mention_pattern = r'@(\w+)'
+        mentions = re.findall(mention_pattern, content)
+        
+        # Create post
+        post = serializer.save(author=self.request.user)
+        
+        # Process hashtags
+        for tag_name in hashtags:
+            hashtag, _ = Hashtag.objects.get_or_create(name=tag_name.lower())
+            post.hashtags.add(hashtag)
+        
+        # Process mentions
+        for username in mentions:
+            try:
+                mentioned_user = User.objects.get(username=username)
+                post.mentions.add(mentioned_user)
+                # Create notification for mention
+                Notification.objects.create(
+                    recipient=mentioned_user,
+                    sender=self.request.user,
+                    notification_type='mention',
+                    post=post
+                )
+            except User.DoesNotExist:
+                continue
 
-    def destroy(self, request, *args, **kwargs):
-        post = self.get_object()
-        if post.author != request.user:
-            return Response(
-                {'error': 'You can only delete your own posts'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        return super().destroy(request, *args, **kwargs)
-
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['post'])
     def like(self, request, pk=None):
-        try:
-            post = self.get_object()
-            user = request.user
+        post = self.get_object()
+        user = request.user
+        
+        if post.likes.filter(id=user.id).exists():
+            post.likes.remove(user)
+            return Response({'detail': 'Post unliked'})
+        else:
+            post.likes.add(user)
+            # Create notification for like
+            if post.author != user:
+                Notification.objects.create(
+                    recipient=post.author,
+                    sender=user,
+                    notification_type='like',
+                    post=post
+                )
+            return Response({'detail': 'Post liked'})
 
-            if post.likes.filter(id=user.id).exists():
-                post.likes.remove(user)
-                return Response({"detail": "Post unliked"}, status=status.HTTP_200_OK)
-            else:
-                post.likes.add(user)
-                return Response({"detail": "Post liked"}, status=status.HTTP_200_OK)
-        except Post.DoesNotExist:
-            return Response(
-                {"error": "Post not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['post'])
     def comment(self, request, pk=None):
-        try:
-            post = self.get_object()
-            serializer = CommentSerializer(data=request.data)
-            
-            if serializer.is_valid():
-                serializer.save(post=post, author=request.user)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Post.DoesNotExist:
-            return Response(
-                {"error": "Post not found"},
-                status=status.HTTP_404_NOT_FOUND
+        post = self.get_object()
+        serializer = CommentSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            comment = serializer.save(
+                post=post,
+                author=request.user
             )
+            # Create notification for comment
+            if post.author != request.user:
+                Notification.objects.create(
+                    recipient=post.author,
+                    sender=request.user,
+                    notification_type='comment',
+                    post=post,
+                    comment=comment
+                )
+            return Response(
+                CommentSerializer(comment).data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    @action(detail=True, methods=['post'])
+    def share(self, request, pk=None):
+        post = self.get_object()
+        post.shares_count += 1
+        post.save()
+        
+        # Create notification for share
+        if post.author != request.user:
+            Notification.objects.create(
+                recipient=post.author,
+                sender=request.user,
+                notification_type='share',
+                post=post
+            )
+        
+        return Response({'detail': 'Post shared successfully'})
 
     @action(detail=True, methods=['get'])
     def comments(self, request, pk=None):
@@ -236,3 +326,31 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response(serializer.data)
+
+class MessageViewSet(viewsets.ModelViewSet):
+    serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Message.objects.filter(
+            recipient=self.request.user
+        ) | Message.objects.filter(
+            sender=self.request.user
+        )
+
+    def perform_create(self, serializer):
+        serializer.save(sender=self.request.user)
+
+class NotificationViewSet(viewsets.ModelViewSet):
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(recipient=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def mark_read(self, request, pk=None):
+        notification = self.get_object()
+        notification.is_read = True
+        notification.save()
+        return Response({'detail': 'Notification marked as read'})

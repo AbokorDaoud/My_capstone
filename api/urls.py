@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     UserViewSet, PostViewSet, FeedView, UserProfileViewSet,
     UserRegistrationView, UserLoginView, api_root, health_check,
-    FollowView
+    FollowView, MessageViewSet, NotificationViewSet
 )
 
 # Create a router and register our viewsets with it
@@ -12,6 +12,8 @@ router = DefaultRouter()
 router.register('users', UserViewSet, basename='user')  
 router.register('posts', PostViewSet, basename='post')
 router.register('profiles', UserProfileViewSet, basename='profile')
+router.register('messages', MessageViewSet, basename='message')
+router.register('notifications', NotificationViewSet, basename='notification')
 
 app_name = 'api'
 

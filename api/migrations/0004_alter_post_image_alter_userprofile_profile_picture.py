@@ -14,11 +14,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='post',
             name='image',
-            field=models.FileField(blank=True, null=True, upload_to=api.models.post_image_path),
+            field=models.ImageField(blank=True, null=True, upload_to='posts/'),
         ),
         migrations.AlterField(
             model_name='userprofile',
             name='profile_picture',
-            field=models.FileField(blank=True, null=True, upload_to=api.models.user_profile_image_path),
+            field=models.ImageField(blank=True, null=True, upload_to='profile_pics/'),
         ),
     ]

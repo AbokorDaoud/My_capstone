@@ -103,17 +103,25 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media files
+# Media files configuration
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# File Upload Settings
-FILE_UPLOAD_HANDLERS = [
-    'django.core.files.uploadhandler.MemoryFileUploadHandler',
-    'django.core.files.uploadhandler.TemporaryFileUploadHandler',
-]
-FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB
+# Create media directories if they don't exist
+PROFILE_PICS_DIR = os.path.join(MEDIA_ROOT, 'profile_pics')
+COVER_PHOTOS_DIR = os.path.join(MEDIA_ROOT, 'cover_photos')
+POST_IMAGES_DIR = os.path.join(MEDIA_ROOT, 'posts')
+
+os.makedirs(MEDIA_ROOT, exist_ok=True)
+os.makedirs(PROFILE_PICS_DIR, exist_ok=True)
+os.makedirs(COVER_PHOTOS_DIR, exist_ok=True)
+os.makedirs(POST_IMAGES_DIR, exist_ok=True)
+
+# File upload settings
+FILE_UPLOAD_PERMISSIONS = 0o644
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+MAX_UPLOAD_SIZE = 5242880  # 5MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
 
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = True

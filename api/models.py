@@ -4,6 +4,19 @@ from django.utils import timezone
 from django.db.models.signals import post_delete, post_save, pre_delete
 from django.dispatch import receiver
 from django.db.models import Q
+import os
+
+def user_profile_picture_path(instance, filename):
+    """Generate file path for profile picture"""
+    ext = filename.split('.')[-1]
+    filename = f'{instance.user.username}_profile_pic.{ext}'
+    return os.path.join('profile_pics', filename)
+
+def user_cover_photo_path(instance, filename):
+    """Generate file path for cover photo"""
+    ext = filename.split('.')[-1]
+    filename = f'{instance.user.username}_cover_photo.{ext}'
+    return os.path.join('cover_photos', filename)
 
 class UserProfile(models.Model):
     """
@@ -19,17 +32,43 @@ class UserProfile(models.Model):
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     bio = models.TextField(max_length=500, blank=True)
-    profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
+    profile_picture = models.ImageField(
+        upload_to=user_profile_picture_path,
+        null=True,
+        blank=True,
+        max_length=255,
+        help_text="Profile picture - Maximum size 5MB"
+    )
+    cover_photo = models.ImageField(
+        upload_to=user_cover_photo_path,
+        null=True,
+        blank=True,
+        max_length=255,
+        help_text="Cover photo - Maximum size 5MB"
+    )
+    website = models.URLField(max_length=200, blank=True)
+    location = models.CharField(max_length=100, blank=True)
     is_verified = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     followers = models.ManyToManyField(User, related_name='following', blank=True)
-    website = models.URLField(max_length=200, blank=True)
-    location = models.CharField(max_length=100, blank=True)
-    cover_photo = models.ImageField(upload_to='cover_photos/', null=True, blank=True)
 
     def __str__(self):
         return f"{self.user.username}'s profile"
+
+    def save(self, *args, **kwargs):
+        """Override save method to handle image processing"""
+        # Delete old profile picture if it's being replaced
+        if self.pk:
+            try:
+                old_instance = UserProfile.objects.get(pk=self.pk)
+                if old_instance.profile_picture and self.profile_picture != old_instance.profile_picture:
+                    old_instance.profile_picture.delete(save=False)
+                if old_instance.cover_photo and self.cover_photo != old_instance.cover_photo:
+                    old_instance.cover_photo.delete(save=False)
+            except UserProfile.DoesNotExist:
+                pass
+        super().save(*args, **kwargs)
 
     @property
     def followers_count(self):

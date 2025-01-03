@@ -75,15 +75,24 @@ class UserProfile(models.Model):
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        """Override delete method to handle cleanup"""
+        """Override delete method to handle cleanup and user deletion"""
+        # Store reference to user
+        user = self.user
+        
         # Delete profile pictures if they exist
         if self.profile_picture:
             self.profile_picture.delete(save=False)
         if self.cover_photo:
             self.cover_photo.delete(save=False)
+            
         # Clear followers relationship
         self.followers.clear()
+        
+        # Delete the profile first
         super().delete(*args, **kwargs)
+        
+        # Delete the associated user
+        user.delete()
 
     @property
     def followers_count(self):

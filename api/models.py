@@ -100,7 +100,9 @@ class UserProfile(models.Model):
 def delete_user_on_profile_delete(sender, instance, **kwargs):
     """Delete User when UserProfile is deleted"""
     try:
-        if instance.user:
+        if instance.user and not hasattr(instance.user, '_being_deleted'):
+            # Mark user as being deleted to prevent recursion
+            instance.user._being_deleted = True
             instance.user.delete()
     except User.DoesNotExist:
         pass
@@ -109,7 +111,9 @@ def delete_user_on_profile_delete(sender, instance, **kwargs):
 def delete_profile_on_user_delete(sender, instance, **kwargs):
     """Delete UserProfile when User is deleted"""
     try:
-        if hasattr(instance, 'profile'):
+        if hasattr(instance, 'profile') and not hasattr(instance, '_being_deleted'):
+            # Mark profile as being deleted to prevent recursion
+            instance.profile._being_deleted = True
             instance.profile.delete()
     except UserProfile.DoesNotExist:
         pass

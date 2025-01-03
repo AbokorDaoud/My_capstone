@@ -397,3 +397,284 @@ Remember to:
 2. Save your requests after testing
 3. Document any special requirements
 4. Test both success and failure cases
+
+# Social Media API Testing Guide
+
+## Base URL
+```
+https://social-media-alx-project.onrender.com
+```
+
+## Authentication
+
+### 1. Get CSRF Token
+```
+GET /csrf/
+```
+- Save the csrftoken from cookies for subsequent requests
+
+### 2. User Registration
+```
+POST /api/auth/register/
+Headers:
+- X-CSRFToken: <csrf_token>
+- Content-Type: application/json
+
+Body:
+{
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "securepassword123",
+    "password2": "securepassword123"
+}
+```
+
+### 3. User Login
+```
+POST /api/auth/login/
+Headers:
+- X-CSRFToken: <csrf_token>
+- Content-Type: application/json
+
+Body:
+{
+    "username": "testuser",
+    "password": "securepassword123"
+}
+```
+- Save the access token for subsequent authenticated requests
+
+## User Management
+
+### 1. List Users
+```
+GET /api/users/
+Headers:
+- Authorization: Bearer <access_token>
+```
+
+### 2. Get User Details
+```
+GET /api/users/{user_id}/
+Headers:
+- Authorization: Bearer <access_token>
+```
+
+### 3. Update User
+```
+PUT /api/users/{user_id}/
+Headers:
+- Authorization: Bearer <access_token>
+- Content-Type: application/json
+
+Body:
+{
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john@example.com"
+}
+```
+
+### 4. Delete User
+```
+DELETE /api/users/{user_id}/
+Headers:
+- Authorization: Bearer <access_token>
+```
+
+## Profile Management
+
+### 1. Get User Profile
+```
+GET /api/profiles/{user_id}/
+Headers:
+- Authorization: Bearer <access_token>
+```
+
+### 2. Update Profile
+```
+PUT /api/profiles/{user_id}/
+Headers:
+- Authorization: Bearer <access_token>
+- Content-Type: multipart/form-data
+
+Body:
+- bio: "My bio text"
+- profile_picture: [file upload]
+- cover_photo: [file upload]
+- website: "https://example.com"
+- location: "New York"
+```
+
+## Post Management
+
+### 1. Create Post
+```
+POST /api/posts/
+Headers:
+- Authorization: Bearer <access_token>
+- Content-Type: multipart/form-data
+
+Body:
+- content: "This is my post #test @mention"
+- image: [file upload]
+- visibility: "public" | "followers" | "private"
+```
+
+### 2. List Posts
+```
+GET /api/posts/
+Headers:
+- Authorization: Bearer <access_token>
+```
+
+### 3. Get Post Details
+```
+GET /api/posts/{post_id}/
+Headers:
+- Authorization: Bearer <access_token>
+```
+
+### 4. Update Post
+```
+PUT /api/posts/{post_id}/
+Headers:
+- Authorization: Bearer <access_token>
+- Content-Type: multipart/form-data
+
+Body:
+- content: "Updated post content"
+- image: [file upload]
+- visibility: "public"
+```
+
+### 5. Delete Post
+```
+DELETE /api/posts/{post_id}/
+Headers:
+- Authorization: Bearer <access_token>
+```
+
+### 6. Like/Unlike Post
+```
+POST /api/posts/{post_id}/like/
+Headers:
+- Authorization: Bearer <access_token>
+```
+
+### 7. Comment on Post
+```
+POST /api/posts/{post_id}/comment/
+Headers:
+- Authorization: Bearer <access_token>
+- Content-Type: application/json
+
+Body:
+{
+    "content": "Great post!"
+}
+```
+
+### 8. Share Post
+```
+POST /api/posts/{post_id}/share/
+Headers:
+- Authorization: Bearer <access_token>
+```
+
+## Follow System
+
+### 1. Follow User
+```
+POST /api/users/{user_id}/follow/
+Headers:
+- Authorization: Bearer <access_token>
+```
+
+### 2. Get User Feed
+```
+GET /api/feed/
+Headers:
+- Authorization: Bearer <access_token>
+```
+
+## Direct Messaging
+
+### 1. Send Message
+```
+POST /api/messages/
+Headers:
+- Authorization: Bearer <access_token>
+- Content-Type: application/json
+
+Body:
+{
+    "recipient": user_id,
+    "content": "Hello!"
+}
+```
+
+### 2. List Messages
+```
+GET /api/messages/
+Headers:
+- Authorization: Bearer <access_token>
+```
+
+## Notifications
+
+### 1. List Notifications
+```
+GET /api/notifications/
+Headers:
+- Authorization: Bearer <access_token>
+```
+
+### 2. Mark Notification as Read
+```
+POST /api/notifications/{notification_id}/mark_read/
+Headers:
+- Authorization: Bearer <access_token>
+```
+
+## Testing Flow
+
+1. Get CSRF token
+2. Register a new user
+3. Login and get access token
+4. Update user profile
+5. Create a post
+6. Like and comment on the post
+7. Follow another user
+8. Check feed for posts
+9. Send a direct message
+10. Check notifications
+
+## Error Handling
+All endpoints return appropriate HTTP status codes:
+- 200: Success
+- 201: Created
+- 400: Bad Request
+- 401: Unauthorized
+- 403: Forbidden
+- 404: Not Found
+- 500: Server Error
+
+## Pagination
+List endpoints support pagination with query parameters:
+```
+?page=1&page_size=10
+```
+
+## Search and Filtering
+Some endpoints support search and filtering:
+```
+/api/posts/?search=keyword
+/api/users/?search=username
+```
+
+## Environment Variables
+Create these environment variables in Postman:
+- `BASE_URL`: https://social-media-alx-project.onrender.com
+- `ACCESS_TOKEN`: Your JWT access token after login
+- `CSRF_TOKEN`: Your CSRF token

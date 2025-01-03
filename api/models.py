@@ -222,6 +222,7 @@ class Notification(models.Model):
     - New followers
     - Mentions in posts
     - Post shares
+    - Direct messages
     """
     NOTIFICATION_TYPES = [
         ('follow', 'Follow'),
@@ -229,6 +230,7 @@ class Notification(models.Model):
         ('comment', 'Comment'),
         ('mention', 'Mention'),
         ('share', 'Share'),
+        ('message', 'Message'),
     ]
 
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
@@ -236,6 +238,7 @@ class Notification(models.Model):
     notification_type = models.CharField(max_length=10, choices=NOTIFICATION_TYPES)
     post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True, blank=True)
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE, null=True, blank=True)
+    message = models.ForeignKey('Message', on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
 

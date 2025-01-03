@@ -476,8 +476,16 @@ class MessageViewSet(viewsets.ModelViewSet):
         )
 
     def perform_create(self, serializer):
-        """Create new message with current user as sender"""
-        serializer.save(sender=self.request.user)
+        """Create new message with current user as sender and create notification"""
+        message = serializer.save(sender=self.request.user)
+        # Create notification for the recipient
+        Notification.objects.create(
+            recipient=message.recipient,
+            sender=self.request.user,
+            notification_type='message',
+            message=message
+        )
+        return Response(serializer.data)
 
 class NotificationViewSet(viewsets.ModelViewSet):
     """

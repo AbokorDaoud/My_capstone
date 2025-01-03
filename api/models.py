@@ -20,80 +20,25 @@ def user_cover_photo_path(instance, filename):
 
 class UserProfile(models.Model):
     """
-    Extended user profile model that adds additional fields to the default Django User model.
-    This model handles all user-specific data and relationships such as followers and profile details.
-    
-    Key features:
-    - One-to-one relationship with Django's User model
-    - Profile picture and cover photo upload
-    - Bio and location information
-    - Verification status
-    - Follower/Following relationship management
+    Extended user profile model
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     bio = models.TextField(max_length=500, blank=True)
-    profile_picture = models.ImageField(
-        upload_to=user_profile_picture_path,
-        null=True,
-        blank=True,
-        max_length=255,
-        help_text="Profile picture - Maximum size 5MB"
-    )
-    cover_photo = models.ImageField(
-        upload_to=user_cover_photo_path,
-        null=True,
-        blank=True,
-        max_length=255,
-        help_text="Cover photo - Maximum size 5MB"
-    )
-    website = models.URLField(max_length=200, blank=True)
     location = models.CharField(max_length=100, blank=True)
-    is_verified = models.BooleanField(default=False)
+    website = models.URLField(max_length=200, blank=True)
+    followers = models.ManyToManyField('self', symmetrical=False, related_name='following', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    followers = models.ManyToManyField(User, related_name='following', blank=True)
-
-    class Meta:
-        verbose_name = 'User Profile'
-        verbose_name_plural = 'User Profiles'
+    _being_deleted = False
 
     def __str__(self):
         return f"{self.user.username}'s profile"
 
-    def save(self, *args, **kwargs):
-        """Override save method to handle image processing"""
-        # Delete old profile picture if it's being replaced
-        if self.pk:
-            try:
-                old_instance = UserProfile.objects.get(pk=self.pk)
-                if old_instance.profile_picture and self.profile_picture != old_instance.profile_picture:
-                    old_instance.profile_picture.delete(save=False)
-                if old_instance.cover_photo and self.cover_photo != old_instance.cover_photo:
-                    old_instance.cover_photo.delete(save=False)
-            except UserProfile.DoesNotExist:
-                pass
-        super().save(*args, **kwargs)
-
     def delete(self, *args, **kwargs):
-        """Override delete method to handle cleanup"""
-        # Delete profile pictures if they exist
-        if self.profile_picture:
-            self.profile_picture.delete(save=False)
-        if self.cover_photo:
-            self.cover_photo.delete(save=False)
-        # Clear followers relationship
-        self.followers.clear()
+        if not self._being_deleted:
+            self._being_deleted = True
+            self.user.delete()
         super().delete(*args, **kwargs)
-
-    @property
-    def followers_count(self):
-        """Returns the number of followers for this user"""
-        return self.followers.count()
-
-    @property
-    def following_count(self):
-        """Returns the number of users this user is following"""
-        return UserProfile.objects.filter(followers=self.user).count()
 
 # Signal handlers for User and UserProfile deletion
 @receiver(post_delete, sender=UserProfile)

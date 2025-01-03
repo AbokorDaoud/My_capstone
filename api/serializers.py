@@ -46,34 +46,26 @@ class UserLoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the UserProfile model.
-    Handles extended user profile data and social relationships.
-    
-    Features:
-    - User details inclusion
-    - Follower/Following counts
-    - Following status check
-    - Profile customization fields
-    """
-    user = UserSerializer(read_only=True)
-    followers_count = serializers.IntegerField(read_only=True)
-    following_count = serializers.IntegerField(read_only=True)
-    is_following = serializers.SerializerMethodField()
+    """Serializer for UserProfile model"""
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+    first_name = serializers.CharField(source='user.first_name', read_only=True)
+    last_name = serializers.CharField(source='user.last_name', read_only=True)
+    followers_count = serializers.SerializerMethodField()
+    following_count = serializers.SerializerMethodField()
 
     class Meta:
         model = UserProfile
-        fields = ('id', 'user', 'bio', 'profile_picture', 'is_verified', 'created_at', 
-                 'updated_at', 'followers_count', 'following_count', 'is_following',
-                 'website', 'location', 'cover_photo')
-        read_only_fields = ('created_at', 'updated_at', 'is_verified')
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 
+                 'bio', 'location', 'website', 'followers_count', 
+                 'following_count', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
 
-    def get_is_following(self, obj):
-        """Check if the requesting user is following this profile"""
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return obj.followers.filter(id=request.user.id).exists()
-        return False
+    def get_followers_count(self, obj):
+        return obj.followers.count()
+
+    def get_following_count(self, obj):
+        return obj.following.count()
 
 class CommentSerializer(serializers.ModelSerializer):
     """

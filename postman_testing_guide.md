@@ -339,68 +339,6 @@ POST {{base_url}}/api/users/2/follow/
 GET {{base_url}}/api/feed/
 ```
 
-## Best Practices
-
-### 1. Environment Management
-- Create separate environments for local and production
-- Never hardcode sensitive data
-- Use variables for base URLs and tokens
-
-### 2. Request Organization
-- Group related requests in folders
-- Use descriptive names for requests
-- Add descriptions to complex requests
-
-### 3. Testing Workflow
-1. Start with authentication
-2. Test happy paths first
-3. Then test error cases
-4. Verify response status codes
-5. Check response body structure
-
-### 4. Security
-- Never share collections with tokens
-- Reset sensitive data before sharing
-- Use environment variables for sensitive data
-
-## Common Issues and Solutions
-
-### 1. Authentication Issues
-- Check if token is correctly set in environment
-- Verify token hasn't expired
-- Ensure Authorization header is correct
-
-### 2. File Upload Issues
-- Use form-data for file uploads
-- Set correct Content-Type header
-- Check file size limits
-
-### 3. CORS Issues
-- These won't appear in Postman (advantage over browsers)
-- Useful for isolating CORS vs API issues
-
-## Testing Checklist
-
-- [ ] Authentication endpoints working
-- [ ] Can create new users
-- [ ] Can create posts with images
-- [ ] Can follow/unfollow users
-- [ ] Feed shows correct posts
-- [ ] Profile updates working
-- [ ] Error handling working correctly
-- [ ] Response formats are consistent
-- [ ] Status codes are appropriate
-
-## Conclusion
-
-Postman provides a robust environment for API testing that surpasses browser capabilities. By following this guide and utilizing Postman's features, you can effectively test and debug your API endpoints.
-
-Remember to:
-1. Keep your environment variables updated
-2. Save your requests after testing
-3. Document any special requirements
-4. Test both success and failure cases
-
 ## Social Media API - Postman Testing Guide
 
 ## Base URL
@@ -537,3 +475,241 @@ https://social-media-alx-project.onrender.com
 6. Test error cases
 
 Remember to test both successful and error scenarios for each endpoint!
+
+## Social Media API - Comprehensive Testing Guide
+
+## Base URL
+```
+https://social-media-alx-project.onrender.com
+```
+
+## Setup in Postman
+
+1. Create a new collection named "Social Media API"
+2. Set up environment variables:
+   - `base_url`: Your API base URL
+   - `token`: For storing authentication token
+
+## 1. User Management
+
+### 1.1 User Registration
+- **Endpoint**: `POST {{base_url}}/api/auth/register/`
+- **Body** (raw JSON):
+```json
+{
+    "username": "testuser1",
+    "email": "test1@example.com",
+    "password": "securepass123",
+    "first_name": "Test",
+    "last_name": "User"
+}
+```
+- **Expected Response**: 201 Created
+- **Test Cases**:
+  - Valid registration
+  - Duplicate username
+  - Invalid email format
+  - Password too short
+
+### 1.2 User Login
+- **Endpoint**: `POST {{base_url}}/api/auth/login/`
+- **Body** (raw JSON):
+```json
+{
+    "username": "testuser1",
+    "password": "securepass123"
+}
+```
+- **Expected Response**: 200 OK with tokens
+- **Test Cases**:
+  - Valid credentials
+  - Invalid password
+  - Non-existent user
+
+### 1.3 View Profile
+- **Endpoint**: `GET {{base_url}}/api/users/me/`
+- **Auth**: Bearer Token
+- **Test Cases**:
+  - View own profile
+  - View other user's profile
+  - Invalid token
+
+## 2. Post Management
+
+### 2.1 Create Post
+- **Endpoint**: `POST {{base_url}}/api/posts/`
+- **Auth**: Bearer Token
+- **Body** (raw JSON):
+```json
+{
+    "content": "This is my first test post!",
+    "visibility": "public"
+}
+```
+- **Test Cases**:
+  - Create public post
+  - Create private post
+  - Empty content
+  - No authentication
+
+### 2.2 Get Posts
+- **Endpoint**: `GET {{base_url}}/api/posts/`
+- **Query Parameters**:
+  - `page`: Page number
+  - `ordering`: `-created_at` (newest first)
+- **Test Cases**:
+  - Get all public posts
+  - Test pagination
+  - Test ordering
+
+### 2.3 Update Post
+- **Endpoint**: `PUT {{base_url}}/api/posts/{post_id}/`
+- **Auth**: Bearer Token
+- **Body** (raw JSON):
+```json
+{
+    "content": "Updated post content",
+    "visibility": "private"
+}
+```
+- **Test Cases**:
+  - Update own post
+  - Update other's post
+  - Invalid post ID
+
+### 2.4 Delete Post
+- **Endpoint**: `DELETE {{base_url}}/api/posts/{post_id}/`
+- **Auth**: Bearer Token
+- **Test Cases**:
+  - Delete own post
+  - Delete other's post
+  - Delete non-existent post
+
+## 3. Follow System
+
+### 3.1 Follow User
+- **Endpoint**: `POST {{base_url}}/api/users/{user_id}/follow/`
+- **Auth**: Bearer Token
+- **Test Cases**:
+  - Follow user
+  - Unfollow user
+  - Follow self
+  - Follow non-existent user
+
+### 3.2 Get Followers/Following
+- **Endpoint**: `GET {{base_url}}/api/users/{user_id}/followers/`
+- **Endpoint**: `GET {{base_url}}/api/users/{user_id}/following/`
+- **Test Cases**:
+  - Get followers list
+  - Get following list
+  - Pagination test
+
+## 4. Feed
+
+### 4.1 Get Feed
+- **Endpoint**: `GET {{base_url}}/api/feed/`
+- **Auth**: Bearer Token
+- **Query Parameters**:
+  - `page`: Page number
+  - `ordering`: `-created_at`
+- **Test Cases**:
+  - Get personalized feed
+  - Test pagination
+  - Test with no follows
+
+## 5. Likes and Comments
+
+### 5.1 Like Post
+- **Endpoint**: `POST {{base_url}}/api/posts/{post_id}/like/`
+- **Auth**: Bearer Token
+- **Test Cases**:
+  - Like post
+  - Unlike post
+  - Like non-existent post
+
+### 5.2 Add Comment
+- **Endpoint**: `POST {{base_url}}/api/posts/{post_id}/comments/`
+- **Auth**: Bearer Token
+- **Body** (raw JSON):
+```json
+{
+    "content": "Great post!"
+}
+```
+- **Test Cases**:
+  - Add comment
+  - Reply to comment
+  - Empty comment
+
+## Testing Workflow
+
+1. **Initial Setup**:
+   ```
+   1. Register User 1
+   2. Register User 2
+   3. Login User 1 (save token)
+   ```
+
+2. **Post Testing**:
+   ```
+   1. Create post as User 1
+   2. View posts
+   3. Update post
+   4. Try to delete other's post (should fail)
+   ```
+
+3. **Follow Testing**:
+   ```
+   1. User 2 follows User 1
+   2. Verify follower count
+   3. Check User 2's feed for User 1's posts
+   ```
+
+4. **Interaction Testing**:
+   ```
+   1. Like posts
+   2. Comment on posts
+   3. Reply to comments
+   ```
+
+## Common Issues & Solutions
+
+1. **Authentication Issues**:
+   - Check token format: `Bearer <token>`
+   - Ensure token is not expired
+   - Try re-login if unauthorized
+
+2. **Post Creation Issues**:
+   - Verify content is not empty
+   - Check visibility setting
+   - Ensure proper authentication
+
+3. **Follow System Issues**:
+   - Cannot follow self
+   - Cannot follow same user twice
+   - Must be authenticated
+
+## Environment Variables
+
+Create these variables in your Postman environment:
+```
+base_url: https://social-media-alx-project.onrender.com
+token: <your_jwt_token>
+user1_id: <after_registration>
+user2_id: <after_registration>
+post1_id: <after_creation>
+```
+
+## Testing Sequence
+
+1. Run authentication tests first
+2. Test CRUD operations on posts
+3. Test follow system
+4. Test feed generation
+5. Test interactions (likes, comments)
+
+Remember to:
+- Save responses for later use
+- Test both success and error cases
+- Verify response status codes
+- Check response data structure

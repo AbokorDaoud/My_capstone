@@ -2,62 +2,30 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import UserProfile, Post, Comment, Hashtag, Notification, Message
 
-class UserProfileSerializer(serializers.ModelSerializer):
-    """Serializer for UserProfile model"""
-    username = serializers.CharField(source='user.username', read_only=True)
-    email = serializers.EmailField(source='user.email', read_only=True)
-    first_name = serializers.CharField(source='user.first_name', read_only=True)
-    last_name = serializers.CharField(source='user.last_name', read_only=True)
-    followers_count = serializers.SerializerMethodField()
-    following_count = serializers.SerializerMethodField()
-
-    class Meta:
-        model = UserProfile
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 
-                 'bio', 'location', 'website', 'followers_count', 
-                 'following_count', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
-
-    def get_followers_count(self, obj):
-        return obj.followers.count()
-
-    def get_following_count(self, obj):
-        return obj.following.count()
-
 class UserSerializer(serializers.ModelSerializer):
-    """Serializer for User model with profile handling"""
-    password = serializers.CharField(write_only=True)
-    profile = UserProfileSerializer(read_only=True)
+    """
+    Serializer for the User model.
+    Handles user registration and profile data serialization.
     
+    Features:
+    - Secure password handling (write-only)
+    - Basic user information serialization
+    """
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'password', 'first_name', 'last_name', 'profile', 'date_joined']
-        read_only_fields = ['date_joined']
-        extra_kwargs = {
-            'password': {'write_only': True},
-            'email': {'required': True},
-            'first_name': {'required': True},
-            'last_name': {'required': True}
-        }
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'date_joined', 'password')
+        extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        """Create and return a new user with encrypted password."""
-        password = validated_data.pop('password')
+        """
+        Override create method to properly handle password hashing.
+        """
         user = User.objects.create_user(
             username=validated_data['username'],
-            email=validated_data['email'],
-            password=password,
-            first_name=validated_data.get('first_name', ''),
-            last_name=validated_data.get('last_name', '')
+            email=validated_data.get('email', ''),
+            password=validated_data['password']
         )
         return user
-
-    def update(self, instance, validated_data):
-        """Update and return an existing user."""
-        if 'password' in validated_data:
-            password = validated_data.pop('password')
-            instance.set_password(password)
-        return super().update(instance, validated_data)
 
 class UserLoginSerializer(serializers.Serializer):
     """
@@ -67,40 +35,34 @@ class UserLoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
-class PostSerializer(serializers.ModelSerializer):
+class UserProfileSerializer(serializers.ModelSerializer):
     """
-    Serializer for the Post model.
-    Handles post creation and social interaction data.
+    Serializer for the UserProfile model.
+    Handles extended user profile data and social relationships.
     
     Features:
-    - Content and media handling
-    - Author information
-    - Like and comment system
-    - Hashtag processing
-    - User mentions
-    - Share tracking
+    - User details inclusion
+    - Follower/Following counts
+    - Following status check
+    - Profile customization fields
     """
-    author_username = serializers.CharField(source='author.username', read_only=True)
-    likes_count = serializers.IntegerField(read_only=True)
-    comments_count = serializers.IntegerField(read_only=True)
-    comments = CommentSerializer(many=True, read_only=True)
-    is_liked = serializers.SerializerMethodField()
-    hashtags = HashtagSerializer(many=True, read_only=True)
-    mentioned_users = UserSerializer(source='mentions', many=True, read_only=True)
+    user = UserSerializer(read_only=True)
+    followers_count = serializers.IntegerField(read_only=True)
+    following_count = serializers.IntegerField(read_only=True)
+    is_following = serializers.SerializerMethodField()
 
     class Meta:
-        model = Post
-        fields = ('id', 'content', 'image', 'author_username', 'created_at', 
-                 'updated_at', 'likes_count', 'comments_count', 'comments', 
-                 'is_liked', 'is_active', 'visibility', 'hashtags', 
-                 'mentioned_users', 'shares_count')
-        read_only_fields = ('author', 'created_at', 'updated_at', 'is_active', 'shares_count')
+        model = UserProfile
+        fields = ('id', 'user', 'bio', 'profile_picture', 'is_verified', 'created_at', 
+                 'updated_at', 'followers_count', 'following_count', 'is_following',
+                 'website', 'location', 'cover_photo')
+        read_only_fields = ('created_at', 'updated_at', 'is_verified')
 
-    def get_is_liked(self, obj):
-        """Check if the requesting user has liked this post"""
+    def get_is_following(self, obj):
+        """Check if the requesting user is following this profile"""
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            return obj.likes.filter(id=request.user.id).exists()
+            return obj.followers.filter(id=request.user.id).exists()
         return False
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -151,6 +113,42 @@ class HashtagSerializer(serializers.ModelSerializer):
         model = Hashtag
         fields = ('id', 'name', 'created_at', 'posts_count')
         read_only_fields = ('created_at',)
+
+class PostSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Post model.
+    Handles post creation and social interaction data.
+    
+    Features:
+    - Content and media handling
+    - Author information
+    - Like and comment system
+    - Hashtag processing
+    - User mentions
+    - Share tracking
+    """
+    author_username = serializers.CharField(source='author.username', read_only=True)
+    likes_count = serializers.IntegerField(read_only=True)
+    comments_count = serializers.IntegerField(read_only=True)
+    comments = CommentSerializer(many=True, read_only=True)
+    is_liked = serializers.SerializerMethodField()
+    hashtags = HashtagSerializer(many=True, read_only=True)
+    mentioned_users = UserSerializer(source='mentions', many=True, read_only=True)
+
+    class Meta:
+        model = Post
+        fields = ('id', 'content', 'image', 'author_username', 'created_at', 
+                 'updated_at', 'likes_count', 'comments_count', 'comments', 
+                 'is_liked', 'is_active', 'visibility', 'hashtags', 
+                 'mentioned_users', 'shares_count')
+        read_only_fields = ('author', 'created_at', 'updated_at', 'is_active', 'shares_count')
+
+    def get_is_liked(self, obj):
+        """Check if the requesting user has liked this post"""
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.likes.filter(id=request.user.id).exists()
+        return False
 
 class NotificationSerializer(serializers.ModelSerializer):
     """

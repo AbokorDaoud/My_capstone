@@ -53,6 +53,10 @@ class UserProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     followers = models.ManyToManyField(User, related_name='following', blank=True)
 
+    class Meta:
+        verbose_name = 'User Profile'
+        verbose_name_plural = 'User Profiles'
+
     def __str__(self):
         return f"{self.user.username}'s profile"
 
@@ -69,6 +73,17 @@ class UserProfile(models.Model):
             except UserProfile.DoesNotExist:
                 pass
         super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """Override delete method to handle cleanup"""
+        # Delete profile pictures if they exist
+        if self.profile_picture:
+            self.profile_picture.delete(save=False)
+        if self.cover_photo:
+            self.cover_photo.delete(save=False)
+        # Clear followers relationship
+        self.followers.clear()
+        super().delete(*args, **kwargs)
 
     @property
     def followers_count(self):
@@ -114,31 +129,32 @@ def cleanup_user_data(sender, instance, **kwargs):
     Signal handler for UserProfile deletion.
     Ensures proper cleanup of all related data before profile deletion.
     """
+    # Clear followers relationship first
+    instance.followers.clear()
+    
     user = instance.user
     
     # Clean up posts and related data
     posts = Post.objects.filter(author=user)
     for post in posts:
-        post.likes.clear()  # Clear many-to-many relationships
-        post.mentions.clear()
+        # Clear likes
+        post.likes.clear()
+        # Clear hashtags
         post.hashtags.clear()
-        post.delete()
+        # Clear mentions
+        post.mentions.clear()
+        # Delete comments
+        post.comments.all().delete()
+    posts.delete()
     
     # Clean up comments
-    comments = Comment.objects.filter(author=user)
-    for comment in comments:
-        comment.likes.clear()
-        comment.delete()
+    Comment.objects.filter(author=user).delete()
     
     # Clean up messages
     Message.objects.filter(Q(sender=user) | Q(recipient=user)).delete()
     
     # Clean up notifications
     Notification.objects.filter(Q(sender=user) | Q(recipient=user)).delete()
-    
-    # Clean up social relationships
-    instance.followers.clear()
-    UserProfile.objects.exclude(user=user).filter(followers=user).update(followers=None)
 
 class Post(models.Model):
     """

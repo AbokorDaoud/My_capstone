@@ -532,9 +532,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register_user(request):
-    """
-    Register a new user and create their profile
-    """
+    """Register a new user"""
     serializer = UserSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
@@ -554,9 +552,7 @@ def register_user(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_user(request):
-    """
-    Authenticate user and return tokens
-    """
+    """Login user and return tokens"""
     username = request.data.get('username')
     password = request.data.get('password')
     
@@ -571,3 +567,51 @@ def login_user(request):
             'user': UserSerializer(user).data
         })
     return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
+class UserViewSet(viewsets.ModelViewSet):
+    """ViewSet for User model"""
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_permissions(self):
+        if self.action in ['create']:
+            return [AllowAny()]
+        return super().get_permissions()
+
+class UserProfileViewSet(viewsets.ModelViewSet):
+    """ViewSet for UserProfile model"""
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+class PostViewSet(viewsets.ModelViewSet):
+    """ViewSet for Post model"""
+    queryset = Post.objects.all().order_by('-created_at')
+    serializer_class = PostSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+class FeedView(generics.ListAPIView):
+    """View for retrieving feed"""
+    serializer_class = PostSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return Post.objects.filter(visibility='public').order_by('-created_at')
+            
+        try:
+            user_profile = self.request.user.profile
+            following_users = user_profile.followers.all()
+            following_users_ids = [user.id for user in following_users]
+            following_users_ids.append(self.request.user.id)
+            return Post.objects.filter(
+                author_id__in=following_users_ids
+            ).order_by('-created_at')
+        except AttributeError:
+            return Post.objects.filter(
+                Q(author=self.request.user) | Q(visibility='public')
+            ).order_by('-created_at')

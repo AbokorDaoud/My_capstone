@@ -41,7 +41,7 @@
    - Click "Environments" in the sidebar
    - Create a new environment called "Render"
    - Add variables:
-     - `base_url`: Your Render deployment URL
+     - `base_url`: `https://social-media-alx-project.onrender.com/api`
      - `token`: (Leave empty initially)
 
 ### Step 2: Authentication Endpoints
@@ -50,7 +50,7 @@
 
 1. Open Postman and create a new request
 2. Set the request method to `POST`
-3. Enter the URL: `{{base_url}}/api/auth/register/`
+3. Enter the URL: `{{base_url}}/auth/register/`
 4. Set up the request:
    - Click on the "Headers" tab
    - Add header: `Content-Type: application/json`
@@ -62,18 +62,17 @@
        "username": "testuser1",
        "email": "testuser1@example.com",
        "password": "testpass123",
-       "bio": "Test user bio"
+       "password2": "testpass123"
    }
    ```
 5. Click "Send"
-6. Expected Response (200 OK):
+6. Expected Response (201 Created):
    ```json
    {
        "user": {
            "id": 1,
            "username": "testuser1",
-           "email": "testuser1@example.com",
-           "bio": "Test user bio"
+           "email": "testuser1@example.com"
        },
        "refresh": "your_refresh_token",
        "access": "your_access_token"
@@ -96,7 +95,7 @@ Tips:
 
 1. Create a new request in Postman
 2. Set the request method to `POST`
-3. Enter the URL: `{{base_url}}/api/auth/login/`
+3. Enter the URL: `{{base_url}}/auth/login/`
 4. Set up the request:
    - Click on the "Headers" tab
    - Add header: `Content-Type: application/json`
@@ -105,8 +104,8 @@ Tips:
    - Enter this JSON in the body:
    ```json
    {
-       "username": "AbouALAbdi",
-       "password": "Newabou22"
+       "username": "testuser1",
+       "password": "testpass123"
    }
    ```
 5. Click "Send"
@@ -143,7 +142,7 @@ Tips:
 
 #### Login
 ```
-POST {{base_url}}/api/auth/login/
+POST {{base_url}}/auth/login/
 Body (raw JSON):
 {
     "username": "testuser1",
@@ -157,7 +156,7 @@ Body (raw JSON):
 
 1. Create a new request in Postman
 2. Set the request method to `POST`
-3. Enter the URL: `{{base_url}}/api/posts/`
+3. Enter the URL: `{{base_url}}/posts/`
 4. Set up Authentication:
    - Click the "Authorization" tab
    - Type: "Bearer Token"
@@ -168,8 +167,9 @@ Body (raw JSON):
    - Select "form-data"
    - Add the following fields:
      ```
-     description: "My first post using Postman!"
+     content: "My first post using Postman!"
      image: [Select File] (optional - click "Select Files" to upload an image)
+     visibility: "public"
      ```
 
 6. Click "Send"
@@ -179,13 +179,13 @@ Body (raw JSON):
        "id": 1,
        "user": {
            "id": 1,
-           "username": "AbouALAbdi"
+           "username": "testuser1"
        },
-       "description": "My first post using Postman!",
+       "content": "My first post using Postman!",
        "image": "url_to_image_if_uploaded",
+       "visibility": "public",
        "created_at": "2024-12-30T15:55:24Z",
-       "updated_at": "2024-12-30T15:55:24Z",
-       "is_active": true
+       "updated_at": "2024-12-30T15:55:24Z"
    }
    ```
 
@@ -201,10 +201,10 @@ Tips:
 - Test both with and without images
 
 Next Steps After Creating a Post:
-1. Try viewing all posts (GET /api/posts/)
-2. View your specific post (GET /api/posts/1/)
-3. Update your post (PUT /api/posts/1/)
-4. Test the feed endpoint (GET /api/feed/)
+1. Try viewing all posts (GET /posts/)
+2. View your specific post (GET /posts/1/)
+3. Update your post (PUT /posts/1/)
+4. Test the feed endpoint (GET /feed/)
 
 Would you like to try any of these operations next?
 
@@ -219,17 +219,17 @@ Would you like to try any of these operations next?
 
 #### Get All Users
 ```
-GET {{base_url}}/api/users/
+GET {{base_url}}/users/
 ```
 
 #### Get Single User
 ```
-GET {{base_url}}/api/users/1/
+GET {{base_url}}/users/1/
 ```
 
 #### Update User
 ```
-PUT {{base_url}}/api/users/1/
+PUT {{base_url}}/users/1/
 Body (raw JSON):
 {
     "bio": "Updated bio"
@@ -240,20 +240,21 @@ Body (raw JSON):
 
 #### Create Post
 ```
-POST {{base_url}}/api/posts/
+POST {{base_url}}/posts/
 Body (form-data):
-- description: "This is my first test post"
+- content: "This is my first test post"
 - image: [Select File] (optional)
+- visibility: "public"
 ```
 
 #### Get All Posts
 ```
-GET {{base_url}}/api/posts/
+GET {{base_url}}/posts/
 ```
 
 #### Get Single Post
 ```
-GET {{base_url}}/api/posts/1/
+GET {{base_url}}/posts/1/
 ```
 
 ### Step 6: Testing Follow System
@@ -262,13 +263,13 @@ GET {{base_url}}/api/posts/1/
 
 1. First, Create Another User to Follow
    ```
-   POST {{base_url}}/api/auth/register/
+   POST {{base_url}}/auth/register/
    Body (raw JSON):
    {
        "username": "testuser2",
        "email": "testuser2@example.com",
        "password": "testpass123",
-       "bio": "Second test user bio"
+       "password2": "testpass123"
    }
    ```
    - Save this user's ID from the response
@@ -276,7 +277,7 @@ GET {{base_url}}/api/posts/1/
 2. Follow the User
    - Create a new request in Postman
    - Set the request method to `POST`
-   - URL: `{{base_url}}/api/users/{user_id}/follow/`
+   - URL: `{{base_url}}/users/{user_id}/follow/`
      (Replace {user_id} with the ID of the user you want to follow)
    
    Headers:
@@ -317,7 +318,7 @@ Testing Tips:
    - Try following without authentication
 
 Next Steps After Following:
-1. View your feed to see posts from followed users (GET /api/feed/)
+1. View your feed to see posts from followed users (GET /feed/)
 2. Create posts as different users to test the feed
 3. Test unfollowing users
 
@@ -325,14 +326,14 @@ Would you like to try any of these operations next?
 
 #### Follow User
 ```
-POST {{base_url}}/api/users/2/follow/
+POST {{base_url}}/users/2/follow/
 ```
 
 ### Step 7: Testing Feed
 
 #### Get User Feed
 ```
-GET {{base_url}}/api/feed/
+GET {{base_url}}/feed/
 ```
 
 ## Best Practices

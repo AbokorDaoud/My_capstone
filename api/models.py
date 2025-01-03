@@ -100,7 +100,7 @@ def handle_user_profile(sender, instance, created=None, **kwargs):
     - Deletes associated data when User is deleted
     """
     if created:
-        UserProfile.objects.create(user=instance)
+        UserProfile.objects.get_or_create(user=instance)
     elif not created and kwargs.get('signal') == post_delete:
         # Clean up related data that might not be caught by cascade
         Post.objects.filter(author=instance).delete()

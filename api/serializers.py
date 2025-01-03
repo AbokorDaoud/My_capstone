@@ -9,7 +9,6 @@ class UserSerializer(serializers.ModelSerializer):
     
     Features:
     - Secure password handling (write-only)
-    - Automatic UserProfile creation
     - Basic user information serialization
     """
     class Meta:
@@ -19,15 +18,13 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """
-        Override create method to properly handle password hashing
-        and create an associated UserProfile.
+        Override create method to properly handle password hashing.
         """
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data.get('email', ''),
             password=validated_data['password']
         )
-        UserProfile.objects.create(user=user, is_verified=False)
         return user
 
 class UserLoginSerializer(serializers.Serializer):

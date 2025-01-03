@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
-from django.db.models.signals import post_delete, post_save, pre_delete
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.db.models import Q
 import os
@@ -75,24 +75,15 @@ class UserProfile(models.Model):
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        """Override delete method to handle cleanup and user deletion"""
-        # Store reference to user
-        user = self.user
-        
+        """Override delete method to handle cleanup"""
         # Delete profile pictures if they exist
         if self.profile_picture:
             self.profile_picture.delete(save=False)
         if self.cover_photo:
             self.cover_photo.delete(save=False)
-            
         # Clear followers relationship
         self.followers.clear()
-        
-        # Delete the profile first
         super().delete(*args, **kwargs)
-        
-        # Delete the associated user
-        user.delete()
 
     @property
     def followers_count(self):
@@ -104,66 +95,30 @@ class UserProfile(models.Model):
         """Returns the number of users this user is following"""
         return UserProfile.objects.filter(followers=self.user).count()
 
+# Signal handlers for User and UserProfile deletion
 @receiver(post_delete, sender=UserProfile)
-def delete_user(sender, instance, **kwargs):
-    """
-    Signal receiver that deletes the associated User instance when a UserProfile is deleted.
-    This ensures that deleting a profile also removes the user account and all related data.
-    """
+def delete_user_on_profile_delete(sender, instance, **kwargs):
+    """Delete User when UserProfile is deleted"""
     try:
-        user = instance.user
-        user.delete()
+        if instance.user:
+            instance.user.delete()
     except User.DoesNotExist:
         pass
 
-@receiver([post_save, post_delete], sender=User)
-def handle_user_profile(sender, instance, created=None, **kwargs):
-    """
-    Signal handler for User model to manage associated UserProfile.
-    - Creates UserProfile when User is created
-    - Deletes associated data when User is deleted
-    """
+@receiver(post_delete, sender=User)
+def delete_profile_on_user_delete(sender, instance, **kwargs):
+    """Delete UserProfile when User is deleted"""
+    try:
+        if hasattr(instance, 'profile'):
+            instance.profile.delete()
+    except UserProfile.DoesNotExist:
+        pass
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    """Create UserProfile when User is created"""
     if created:
         UserProfile.objects.get_or_create(user=instance)
-    elif not created and kwargs.get('signal') == post_delete:
-        # Clean up related data that might not be caught by cascade
-        Post.objects.filter(author=instance).delete()
-        Comment.objects.filter(author=instance).delete()
-        Message.objects.filter(Q(sender=instance) | Q(recipient=instance)).delete()
-        Notification.objects.filter(Q(sender=instance) | Q(recipient=instance)).delete()
-
-@receiver(pre_delete, sender=UserProfile)
-def cleanup_user_data(sender, instance, **kwargs):
-    """
-    Signal handler for UserProfile deletion.
-    Ensures proper cleanup of all related data before profile deletion.
-    """
-    # Clear followers relationship first
-    instance.followers.clear()
-    
-    user = instance.user
-    
-    # Clean up posts and related data
-    posts = Post.objects.filter(author=user)
-    for post in posts:
-        # Clear likes
-        post.likes.clear()
-        # Clear hashtags
-        post.hashtags.clear()
-        # Clear mentions
-        post.mentions.clear()
-        # Delete comments
-        post.comments.all().delete()
-    posts.delete()
-    
-    # Clean up comments
-    Comment.objects.filter(author=user).delete()
-    
-    # Clean up messages
-    Message.objects.filter(Q(sender=user) | Q(recipient=user)).delete()
-    
-    # Clean up notifications
-    Notification.objects.filter(Q(sender=user) | Q(recipient=user)).delete()
 
 class Post(models.Model):
     """

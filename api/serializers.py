@@ -3,29 +3,39 @@ from django.contrib.auth.models import User
 from .models import UserProfile, Post, Comment, Hashtag, Notification, Message
 
 class UserSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the User model.
-    Handles user registration and profile data serialization.
+    """Serializer for User model with profile handling"""
+    password = serializers.CharField(write_only=True)
+    profile = UserProfileSerializer(read_only=True)
     
-    Features:
-    - Secure password handling (write-only)
-    - Basic user information serialization
-    """
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'date_joined', 'password')
-        extra_kwargs = {'password': {'write_only': True}}
+        fields = ['id', 'username', 'email', 'password', 'first_name', 'last_name', 'profile', 'date_joined']
+        read_only_fields = ['date_joined']
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'email': {'required': True},
+            'first_name': {'required': True},
+            'last_name': {'required': True}
+        }
 
     def create(self, validated_data):
-        """
-        Override create method to properly handle password hashing.
-        """
+        """Create and return a new user with encrypted password."""
+        password = validated_data.pop('password')
         user = User.objects.create_user(
             username=validated_data['username'],
-            email=validated_data.get('email', ''),
-            password=validated_data['password']
+            email=validated_data['email'],
+            password=password,
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', '')
         )
         return user
+
+    def update(self, instance, validated_data):
+        """Update and return an existing user."""
+        if 'password' in validated_data:
+            password = validated_data.pop('password')
+            instance.set_password(password)
+        return super().update(instance, validated_data)
 
 class UserLoginSerializer(serializers.Serializer):
     """

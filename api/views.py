@@ -58,6 +58,8 @@ class UserRegistrationView(generics.CreateAPIView):
         if serializer.is_valid():
             user = serializer.save()
             refresh = RefreshToken.for_user(user)
+            # Create profile automatically
+            UserProfile.objects.create(user=user)
             return Response({
                 'user': serializer.data,
                 'refresh': str(refresh),
@@ -526,3 +528,46 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_user(request):
+    """
+    Register a new user and create their profile
+    """
+    serializer = UserSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+        # Create profile automatically
+        UserProfile.objects.create(user=user)
+        # Generate token
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'user': UserSerializer(user).data,
+            'token': {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }
+        }, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_user(request):
+    """
+    Authenticate user and return tokens
+    """
+    username = request.data.get('username')
+    password = request.data.get('password')
+    
+    user = authenticate(username=username, password=password)
+    if user:
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'token': {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            },
+            'user': UserSerializer(user).data
+        })
+    return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)

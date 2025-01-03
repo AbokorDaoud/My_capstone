@@ -184,8 +184,15 @@ class MessageSerializer(serializers.ModelSerializer):
     """
     sender = UserSerializer(read_only=True)
     recipient = UserSerializer(read_only=True)
+    recipient_id = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = Message
-        fields = ('id', 'sender', 'recipient', 'content', 'created_at', 'is_read')
-        read_only_fields = ('created_at',)
+        fields = ('id', 'sender', 'recipient', 'recipient_id', 'content', 'created_at', 'is_read')
+        read_only_fields = ('created_at', 'sender', 'recipient')
+
+    def create(self, validated_data):
+        recipient_id = validated_data.pop('recipient_id')
+        recipient = User.objects.get(id=recipient_id)
+        message = Message.objects.create(recipient=recipient, **validated_data)
+        return message

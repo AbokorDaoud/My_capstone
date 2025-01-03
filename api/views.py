@@ -18,6 +18,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 import re
+from django.db.models import Q
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -153,25 +154,21 @@ class UserViewSet(viewsets.ModelViewSet):
     ViewSet for managing user accounts and social interactions.
     
     Endpoints:
-    - GET /api/users/ - List all users
-    - POST /api/users/ - Create new user
-    - GET /api/users/{id}/ - Retrieve user details
-    - PUT/PATCH /api/users/{id}/ - Update user
-    - DELETE /api/users/{id}/ - Delete user
-    - POST /api/users/{id}/follow/ - Follow/unfollow user
-    - GET /api/users/{id}/feed/ - Get user's feed
-    
-    Features:
-    - User CRUD operations
-    - Follow/unfollow functionality
-    - Personalized feed generation
-    - Authentication required for most actions
+    - GET /api/users/ - List all users (public)
+    - POST /api/users/ - Create new user (public)
+    - GET /api/users/{id}/ - Retrieve user details (public)
+    - PUT/PATCH /api/users/{id}/ - Update user (authenticated)
+    - DELETE /api/users/{id}/ - Delete user (authenticated)
+    - POST /api/users/{id}/follow/ - Follow/unfollow user (authenticated)
     """
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
-    
+
     def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        """
         if self.action in ['create', 'list', 'retrieve']:
             permission_classes = [AllowAny]
         else:
@@ -220,26 +217,18 @@ class PostViewSet(viewsets.ModelViewSet):
     ViewSet for managing posts and their interactions.
     
     Endpoints:
-    - GET /api/posts/ - List all posts
-    - POST /api/posts/ - Create new post
-    - GET /api/posts/{id}/ - Retrieve post
-    - PUT/PATCH /api/posts/{id}/ - Update post
-    - DELETE /api/posts/{id}/ - Delete post
-    - POST /api/posts/{id}/like/ - Like/unlike post
-    - POST /api/posts/{id}/comment/ - Comment on post
-    - POST /api/posts/{id}/share/ - Share post
-    
-    Features:
-    - Post CRUD operations
-    - Hashtag processing
-    - User mentions
-    - Like/comment/share functionality
-    - Notification generation
+    - GET /api/posts/ - List all posts (public)
+    - POST /api/posts/ - Create new post (authenticated)
+    - GET /api/posts/{id}/ - Retrieve post (public)
+    - PUT/PATCH /api/posts/{id}/ - Update post (authenticated)
+    - DELETE /api/posts/{id}/ - Delete post (authenticated)
+    - POST /api/posts/{id}/like/ - Like/unlike post (authenticated)
+    - POST /api/posts/{id}/comment/ - Comment on post (authenticated)
     """
     queryset = Post.objects.all().order_by('-created_at')
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
-    
+
     def perform_create(self, serializer):
         """Create post with hashtag and mention processing"""
         content = self.request.data.get('content', '')
@@ -355,70 +344,51 @@ class PostViewSet(viewsets.ModelViewSet):
 
 class FeedView(generics.ListAPIView):
     """
-    View for retrieving personalized feed of posts.
+    View for retrieving feed of posts.
     
     Endpoints:
-    GET /api/feed/ - Get feed
+    GET /api/feed/ - Get feed (public)
     
     Features:
-    - Personalized feed generation
-    - Authentication required
+    - Public access to posts
+    - Personalized feed for authenticated users
+    - Shows posts from followed users for authenticated users
+    - Shows public posts for unauthenticated users
     """
     serializer_class = PostSerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):
+        """Get feed of posts based on authentication status"""
         if not self.request.user.is_authenticated:
             # Return public posts for unauthenticated users
             return Post.objects.filter(visibility='public').order_by('-created_at')
             
-        # Return personalized feed for authenticated users
-        user_profile = self.request.user.userprofile
-        following_users = user_profile.following.all()
-        following_users_ids = [profile.user.id for profile in following_users]
-        following_users_ids.append(self.request.user.id)  # Include user's own posts
-        return Post.objects.filter(
-            author_id__in=following_users_ids
-        ).order_by('-created_at')
+        try:
+            # Try to get personalized feed for authenticated users
+            user_profile = self.request.user.profile
+            following_users = user_profile.followers.all()
+            following_users_ids = [user.id for user in following_users]
+            following_users_ids.append(self.request.user.id)  # Include user's own posts
+            return Post.objects.filter(
+                author_id__in=following_users_ids
+            ).order_by('-created_at')
+        except AttributeError:
+            # If user has no profile, return only their own posts and public posts
+            return Post.objects.filter(
+                Q(author=self.request.user) | Q(visibility='public')
+            ).order_by('-created_at')
 
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def health_check(request):
-    """
-    Health check endpoint for monitoring service status
-    """
-    return Response({"status": "healthy"}, status=status.HTTP_200_OK)
-
-class HealthCheckView(APIView):
-    """
-    View for health check endpoint.
-    
-    Endpoints:
-    GET /api/health-check/ - Health check
-    
-    Features:
-    - Service status monitoring
-    """
-    permission_classes = [AllowAny]
-    
-    def get(self, request):
-        return Response({"status": "healthy"}, status=status.HTTP_200_OK)
-
-@method_decorator(ensure_csrf_cookie, name='dispatch')
 class UserProfileViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing user profiles.
     
     Endpoints:
-    - GET /api/profiles/ - List all profiles
-    - POST /api/profiles/ - Create new profile
-    - GET /api/profiles/{id}/ - Retrieve profile
-    - PUT/PATCH /api/profiles/{id}/ - Update profile
-    - DELETE /api/profiles/{id}/ - Delete profile
-    
-    Features:
-    - Profile CRUD operations
-    - Authentication required for most actions
+    - GET /api/profiles/ - List all profiles (public)
+    - POST /api/profiles/ - Create new profile (authenticated)
+    - GET /api/profiles/{id}/ - Retrieve profile (public)
+    - PUT/PATCH /api/profiles/{id}/ - Update profile (authenticated)
+    - DELETE /api/profiles/{id}/ - Delete profile (authenticated)
     """
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
@@ -499,3 +469,60 @@ class NotificationViewSet(viewsets.ModelViewSet):
         notification.is_read = True
         notification.save()
         return Response({'detail': 'Notification marked as read'})
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def health_check(request):
+    """
+    Health check endpoint for monitoring service status
+    """
+    return Response({"status": "healthy"}, status=status.HTTP_200_OK)
+
+class HealthCheckView(APIView):
+    """
+    View for health check endpoint.
+    
+    Endpoints:
+    GET /api/health-check/ - Health check
+    
+    Features:
+    - Service status monitoring
+    """
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        return Response({"status": "healthy"}, status=status.HTTP_200_OK)
+
+@method_decorator(ensure_csrf_cookie, name='dispatch')
+class UserProfileViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing user profiles.
+    
+    Endpoints:
+    - GET /api/profiles/ - List all profiles
+    - POST /api/profiles/ - Create new profile
+    - GET /api/profiles/{id}/ - Retrieve profile
+    - PUT/PATCH /api/profiles/{id}/ - Update profile
+    - DELETE /api/profiles/{id}/ - Delete profile
+    
+    Features:
+    - Profile CRUD operations
+    - Authentication required for most actions
+    """
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_object(self):
+        pk = self.kwargs.get('pk')
+        if pk == "me":
+            return self.request.user.profile
+        return super().get_object()
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
